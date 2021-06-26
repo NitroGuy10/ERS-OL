@@ -24,7 +24,7 @@
             font-size: 50px;
         }
 
-        img {
+        img, audio {
             visibility: hidden;
         }
     </style>
@@ -40,6 +40,13 @@
         {% for image in image_list %}
         <img src="{{ image }}" id="{{ image }}">
         {% endfor %}
+    </div>
+
+    <div id="audio" hidden>
+        <audio src="sfx/burn.wav" id="audioBurn" preload="auto"></audio>
+        <audio src="sfx/deal.wav" id="audioDeal" preload="auto"></audio>
+        <audio src="sfx/deal_many.wav" id="audioDealMany" preload="auto"></audio>
+        <audio src="sfx/slap.wav" id="audioSlap" preload="auto"></audio>
     </div>
 
     <script src="scripts/game.js"></script> 

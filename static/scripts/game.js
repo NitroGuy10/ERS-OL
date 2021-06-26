@@ -4,10 +4,12 @@ var gameArea = {
     components: {},
     keys: {},
     framerate: 60,
+    audio: {},
     start: function ()
     {
         this.canvas = document.getElementById("mainCanvas")
         this.context = this.canvas.getContext("2d")
+
         window.addEventListener('keydown', function (e)
         {
             if (!gameArea.keys["ArrowRight"] && e.code === "ArrowRight")
@@ -24,6 +26,11 @@ var gameArea = {
         {
             gameArea.keys[e.code] = false
         })
+
+        this.audio.burn = document.getElementById("audioBurn")
+        this.audio.deal = document.getElementById("audioDeal")
+        this.audio.dealMany = document.getElementById("audioDealMany")
+        this.audio.slap = document.getElementById("audioSlap")
 
         this.interval = setInterval(updateGameArea, Math.ceil(1000 / gameArea.framerate))
     },
@@ -93,6 +100,8 @@ function card(rank, suit, x, y)
             this.y = gameArea.canvas.height + this.height
             this.moving = true
             this.cycle = 0
+            gameArea.audio.deal.currentTime = 0
+            gameArea.audio.deal.play()
             this.interval = setInterval(this.dealMovement, Math.ceil(1000 / gameArea.framerate), this.name)
             console.log("dealing!")
         }
