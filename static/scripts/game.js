@@ -1,7 +1,7 @@
 var gameArea = {
     components: {},
+    drawList: [],  // Components in this array are drawn to the canvas in the order they appear (e.g. last index == drawn on top of everything else)
     keys: {},
-    framerate: 60,
     audio: {},
     start: function ()
     {
@@ -43,13 +43,17 @@ var gameArea = {
             component = this.components[componentName]
             component.update()
         }
+        for (component of this.drawList)
+        {
+            component.draw()
+        }
     }
 
 }
 
 class ImgComponent
 {
-    constructor(name, image, x, y, width, height, rotation, hidden)
+    constructor(name, image, x, y, width, height, rotation)
     {
         this.name = name
         this.image = image
@@ -58,7 +62,6 @@ class ImgComponent
         this.width = width
         this.height = height
         this.rotation = rotation
-        this.hidden = hidden
 
         this.type = "ImgComponent"
         this.animating = false
@@ -68,19 +71,26 @@ class ImgComponent
     }
     update()
     {
-        if (!this.hidden)
-        {
-            // x and y are the center of the image
-            const CONTEXT = gameArea.context
-            CONTEXT.save()
-            CONTEXT.translate(this.x, this.y)
-            CONTEXT.rotate(this.rotation)
-            CONTEXT.drawImage(this.image, this.width / -2, this.height / -2)
-            CONTEXT.restore()
-        }
         for (let animation in this.currentAnimations)
         {
             this.currentAnimations[animation](this)
+        }
+    }
+    draw()
+    {
+        // x and y are the center of the image
+        gameArea.context.save()
+        gameArea.context.translate(this.x, this.y)
+        gameArea.context.rotate(this.rotation)
+        gameArea.context.drawImage(this.image, this.width / -2, this.height / -2)
+        gameArea.context.restore()
+    }
+    hide()
+    {
+        const INDEX_OF = gameArea.drawList.indexOf(this)
+        if (INDEX_OF != -1)
+        {
+            gameArea.drawList.splice(INDEX_OF, 1)
         }
     }
 }
@@ -103,7 +113,8 @@ class Card extends ImgComponent
     {
         if (!this.animating)
         {
-            this.hidden = false
+            this.hide()
+            gameArea.drawList.push(this)
             this.x = (gameArea.canvas.width / 2)
             this.y = gameArea.canvas.height + this.height
             this.animating = true
@@ -143,7 +154,7 @@ function updateGameArea()
 function step(timestamp)
 {
     gameArea.timestamp = timestamp
-    updateGameArea();
+    updateGameArea()
 
     window.requestAnimationFrame(step)
 }
@@ -151,7 +162,6 @@ function step(timestamp)
 function init()
 {
     gameArea.start()
-    new ImgComponent("testImage", document.getElementById("cards/cardHearts8.png"), 50, 50)
     for (let rank = 1; rank < 14; rank++)
     {
         new Card(rank, "Spades", 0, 0)
