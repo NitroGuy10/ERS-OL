@@ -49,54 +49,62 @@ var gameArea = {
 
 }
 
-function imgComponent(name, image, x, y)
+class ImgComponent
 {
-    this.type = "imgComponent"
-    this.name = name
-    this.image = image
-    this.x = x
-    this.y = y
-    this.update = function ()
+    constructor(name, image, x, y)
+    {
+        this.type = "ImgComponent"
+        this.name = name
+        this.image = image
+        this.x = x
+        this.y = y
+
+        gameArea.components[this.name] = this
+    }
+    update()
     {
         gameArea.context.drawImage(this.image, this.x, this.y)
     }
-
-    gameArea.components[this.name] = this
 }
 
-function card(rank, suit, x, y)
+class Card
 {
-    this.type = "card"
-    this.rank = rank  // first letter is always capitalized
-    this.suit = suit
-    this.name = ["cards/card", this.suit, RANK_NAME[rank], ".png"].join("")
-    this.image = document.getElementById(this.name)
-    this.x = x
-    this.y = y
-    this.rotation = 0
-    this.width = 140
-    this.height = 190
-    this.hidden = true
-    this.moving = false
-    this.currentAnimations = {}
-    this.update = function ()
+    constructor(rank, suit, x, y)
+    {
+        this.type = "Card"
+        this.rank = rank // first letter is always capitalized
+        this.suit = suit
+        this.name = ["cards/card", this.suit, RANK_NAME[rank], ".png"].join("")
+        this.image = document.getElementById(this.name)
+        this.x = x
+        this.y = y
+        this.rotation = 0
+        this.width = 140
+        this.height = 190
+        this.hidden = true
+        this.moving = false
+        this.currentAnimations = {}
+
+        gameArea.components[this.name] = this
+    }
+    update()
     {
         if (!this.hidden)
         {
             // x and y are the center of the card
-            context = gameArea.context
-            context.save()
-            context.translate(this.x, this.y)
-            context.rotate(this.rotation)
-            context.drawImage(this.image, this.width / -2, this.height / -2)
-            context.restore()
+            const CONTEXT = gameArea.context
+            CONTEXT.save()
+            CONTEXT.translate(this.x, this.y)
+            CONTEXT.rotate(this.rotation)
+            CONTEXT.drawImage(this.image, this.width / -2, this.height / -2)
+            CONTEXT.restore()
         }
-        for (animation in this.currentAnimations)
+        for (let animation in this.currentAnimations)
         {
             this.currentAnimations[animation](this)
         }
     }
-    this.deal = function ()
+    deal()
     {
         if (!this.moving)
         {
@@ -111,14 +119,13 @@ function card(rank, suit, x, y)
             console.log("dealing!")
         }
     }
-    this.dealMovement = function (thisCard)
+    dealMovement(thisCard)
     {
         const ELAPSED = gameArea.timestamp - thisCard.animationStart
-        const ANIMATION_LENGTH = 100  // in milliseconds
+        const ANIMATION_LENGTH = 100 // in milliseconds
         if (ELAPSED <= ANIMATION_LENGTH)
         {
-            canvasHeight = gameArea.canvas.height
-            thisCard.y = (canvasHeight / 2) * Math.sin(ELAPSED / (ANIMATION_LENGTH / (-0.5 * Math.PI))) + (canvasHeight)
+            thisCard.y = (gameArea.canvas.height / 2) * Math.sin(ELAPSED / (ANIMATION_LENGTH / (-0.5 * Math.PI))) + (gameArea.canvas.height)
             thisCard.rotation = (Math.PI / 2) * Math.sin(ELAPSED / (ANIMATION_LENGTH / (-0.5 * Math.PI))) + (Math.PI / 2)
             console.log("deal moving!")
         }
@@ -130,7 +137,6 @@ function card(rank, suit, x, y)
             console.log("done moving!")
         }
     }
-    gameArea.components[this.name] = this
 }
 
 function updateGameArea()
@@ -151,12 +157,12 @@ function step(timestamp)
 function init()
 {
     gameArea.start()
-    new imgComponent("testImage", document.getElementById("cards/cardHearts8.png"), 50, 50)
+    new ImgComponent("testImage", document.getElementById("cards/cardHearts8.png"), 50, 50)
     for (let rank = 1; rank < 14; rank++)
     {
-        new card(rank, "Spades", 0, 0)
-        new card(rank, "Hearts", 0, 0)
-        new card(rank, "Diamonds", 0, 0)
-        new card(rank, "Clubs", 0, 0)
+        new Card(rank, "Spades", 0, 0)
+        new Card(rank, "Hearts", 0, 0)
+        new Card(rank, "Diamonds", 0, 0)
+        new Card(rank, "Clubs", 0, 0)
     }
 }
