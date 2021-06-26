@@ -1,5 +1,3 @@
-const RANK_NAME = ["NONE", "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
-
 var gameArea = {
     components: {},
     keys: {},
@@ -51,38 +49,19 @@ var gameArea = {
 
 class ImgComponent
 {
-    constructor(name, image, x, y)
+    constructor(name, image, x, y, width, height, rotation, hidden)
     {
-        this.type = "ImgComponent"
         this.name = name
         this.image = image
         this.x = x
         this.y = y
+        this.width = width
+        this.height = height
+        this.rotation = rotation
+        this.hidden = hidden
 
-        gameArea.components[this.name] = this
-    }
-    update()
-    {
-        gameArea.context.drawImage(this.image, this.x, this.y)
-    }
-}
-
-class Card
-{
-    constructor(rank, suit, x, y)
-    {
-        this.type = "Card"
-        this.rank = rank // first letter is always capitalized
-        this.suit = suit
-        this.name = ["cards/card", this.suit, RANK_NAME[rank], ".png"].join("")
-        this.image = document.getElementById(this.name)
-        this.x = x
-        this.y = y
-        this.rotation = 0
-        this.width = 140
-        this.height = 190
-        this.hidden = true
-        this.moving = false
+        this.type = "ImgComponent"
+        this.animating = false
         this.currentAnimations = {}
 
         gameArea.components[this.name] = this
@@ -91,7 +70,7 @@ class Card
     {
         if (!this.hidden)
         {
-            // x and y are the center of the card
+            // x and y are the center of the image
             const CONTEXT = gameArea.context
             CONTEXT.save()
             CONTEXT.translate(this.x, this.y)
@@ -104,14 +83,30 @@ class Card
             this.currentAnimations[animation](this)
         }
     }
+}
+
+class Card extends ImgComponent
+{
+    static RANK_NAME = ["NONE", "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
+    static DEAL_ANIMATION_LENGTH = 100 // in milliseconds
+
+    constructor(rank, suit, x, y, rotation)
+    {
+        const NAME = ["cards/card", suit, Card.RANK_NAME[rank], ".png"].join("")
+        super(NAME, document.getElementById(NAME), x, y, 140, 190, rotation, true)
+
+        this.rank = rank // first letter is always capitalized
+        this.suit = suit
+        this.type = "Card"        
+    }
     deal()
     {
-        if (!this.moving)
+        if (!this.animating)
         {
             this.hidden = false
             this.x = (gameArea.canvas.width / 2)
             this.y = gameArea.canvas.height + this.height
-            this.moving = true
+            this.animating = true
             gameArea.audio.deal.currentTime = 0
             gameArea.audio.deal.play()
             this.animationStart = gameArea.timestamp
@@ -122,17 +117,16 @@ class Card
     dealMovement(thisCard)
     {
         const ELAPSED = gameArea.timestamp - thisCard.animationStart
-        const ANIMATION_LENGTH = 100 // in milliseconds
-        if (ELAPSED <= ANIMATION_LENGTH)
+        if (ELAPSED <= Card.DEAL_ANIMATION_LENGTH)
         {
-            thisCard.y = (gameArea.canvas.height / 2) * Math.sin(ELAPSED / (ANIMATION_LENGTH / (-0.5 * Math.PI))) + (gameArea.canvas.height)
-            thisCard.rotation = (Math.PI / 2) * Math.sin(ELAPSED / (ANIMATION_LENGTH / (-0.5 * Math.PI))) + (Math.PI / 2)
+            thisCard.y = (gameArea.canvas.height / 2) * Math.sin(ELAPSED / (Card.DEAL_ANIMATION_LENGTH / (-0.5 * Math.PI))) + (gameArea.canvas.height)
+            thisCard.rotation = (Math.PI / 2) * Math.sin(ELAPSED / (Card.DEAL_ANIMATION_LENGTH / (-0.5 * Math.PI))) + (Math.PI / 2)
             console.log("deal moving!")
         }
         else
         {
             clearInterval(thisCard.interval)
-            thisCard.moving = false
+            thisCard.animating = false
             delete thisCard.currentAnimations.deal
             console.log("done moving!")
         }
