@@ -32,7 +32,7 @@ var gameArea = {
         this.audio.dealMany = document.getElementById("audioDealMany")
         this.audio.slap = document.getElementById("audioSlap")
 
-        this.interval = setInterval(updateGameArea, Math.ceil(1000 / gameArea.framerate))
+        window.requestAnimationFrame(step)
     },
     clear: function ()
     {
@@ -78,6 +78,7 @@ function card(rank, suit, x, y)
     this.height = 190
     this.hidden = true
     this.moving = false
+    this.currentAnimations = {}
     this.update = function ()
     {
         if (!this.hidden)
@@ -90,6 +91,10 @@ function card(rank, suit, x, y)
             context.drawImage(this.image, this.width / -2, this.height / -2)
             context.restore()
         }
+        for (animation in this.currentAnimations)
+        {
+            this.currentAnimations[animation](this)
+        }
     }
     this.deal = function ()
     {
@@ -99,30 +104,29 @@ function card(rank, suit, x, y)
             this.x = (gameArea.canvas.width / 2)
             this.y = gameArea.canvas.height + this.height
             this.moving = true
-            this.cycle = 0
             gameArea.audio.deal.currentTime = 0
             gameArea.audio.deal.play()
-            this.interval = setInterval(this.dealMovement, Math.ceil(1000 / gameArea.framerate), this.name)
+            this.animationStart = gameArea.timestamp
+            this.currentAnimations.deal = this.dealMovement
             console.log("dealing!")
         }
     }
-    this.dealMovement = function (name)
+    this.dealMovement = function (thisCard)
     {
-        cycle = gameArea.components[name].cycle
-        MOVEMENT_LENGTH = 4
-        if (cycle <= MOVEMENT_LENGTH)
+        const ELAPSED = gameArea.timestamp - thisCard.animationStart
+        const ANIMATION_LENGTH = 100  // in milliseconds
+        if (ELAPSED <= ANIMATION_LENGTH)
         {
             canvasHeight = gameArea.canvas.height
-            gameArea.components[name].y = (canvasHeight / 2) * Math.sin(cycle / (MOVEMENT_LENGTH / (-0.5 * Math.PI))) + (canvasHeight)
-            gameArea.components[name].rotation = (Math.PI / 2) * Math.sin(cycle / (MOVEMENT_LENGTH / (-0.5 * Math.PI))) + (Math.PI / 2)
-
-            gameArea.components[name].cycle++
+            thisCard.y = (canvasHeight / 2) * Math.sin(ELAPSED / (ANIMATION_LENGTH / (-0.5 * Math.PI))) + (canvasHeight)
+            thisCard.rotation = (Math.PI / 2) * Math.sin(ELAPSED / (ANIMATION_LENGTH / (-0.5 * Math.PI))) + (Math.PI / 2)
             console.log("deal moving!")
         }
         else
         {
-            clearInterval(gameArea.components[name].interval)
-            gameArea.components[name].moving = false
+            clearInterval(thisCard.interval)
+            thisCard.moving = false
+            delete thisCard.currentAnimations.deal
             console.log("done moving!")
         }
     }
@@ -134,6 +138,14 @@ function updateGameArea()
     gameArea.clear()
 
     gameArea.update()
+}
+
+function step(timestamp)
+{
+    gameArea.timestamp = timestamp
+    updateGameArea();
+
+    window.requestAnimationFrame(step)
 }
 
 function init()
