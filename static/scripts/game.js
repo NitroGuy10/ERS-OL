@@ -3,6 +3,7 @@ var gameArea = {
     drawList: [],  // Components in this array are drawn to the canvas in the order they appear (e.g. last index == drawn on top of everything else)
     keys: {},
     audio: {},
+    players: [],  // User is always at first index
     start: function ()
     {
         socket.emit("join_lobby", window.location.href.split("/")[window.location.href.split("/").length - 1])
@@ -146,6 +147,57 @@ class Card extends ImgComponent
     }
 }
 
+class TextComponent
+{
+    constructor(name, text, x, y, rotation, font, fillStyle)
+    {
+        this.name = name
+        this.text = text
+        this.x = x
+        this.y = y
+        this.rotation = rotation
+        this.font = font
+        this.fillStyle = fillStyle
+
+        this.type = "TextComponent"
+        this.animating = false
+        this.currentAnimations = {}
+
+        gameArea.components[this.name] = this
+    }
+    set fontSize(size)
+    {
+        this.font = size + this.font.substring(this.font.indexOf(" "))
+    }
+    update()
+    {
+        for (let animation in this.currentAnimations)
+        {
+            this.currentAnimations[animation](this)
+        }
+    }
+    draw()
+    {
+        // x and y are the center of the text
+        gameArea.context.save()
+        gameArea.context.translate(this.x, this.y)
+        gameArea.context.rotate(this.rotation)
+        gameArea.context.font = this.font;
+        gameArea.context.fillStyle = this.fillStyle;
+        gameArea.context.textAlign = "center";
+        gameArea.context.fillText(this.text, 0, 0);
+        gameArea.context.restore()
+    }
+    hide()
+    {
+        const INDEX_OF = gameArea.drawList.indexOf(this)
+        if (INDEX_OF != -1)
+        {
+            gameArea.drawList.splice(INDEX_OF, 1)
+        }
+    }
+}
+
 function updateGameArea()
 {
     gameArea.clear()
@@ -171,4 +223,5 @@ function init()
         new Card(rank, "Diamonds", 0, 0)
         new Card(rank, "Clubs", 0, 0)
     }
+    gameArea.drawList.push(new TextComponent("statusText", "Connecting...", gameArea.canvas.width / 2, gameArea.canvas.height / 2, 0, "40px Arial, Comic Sans MS, sans-serif", "#eee"))
 }

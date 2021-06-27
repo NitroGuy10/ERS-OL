@@ -52,7 +52,7 @@ def join_lobby(socket_id, lobby_name):
         sio.enter_room(socket_id, lobby_name)
         new_player = {
             "socket_id": socket_id,
-            "name": "player",  # Prompt user to enter a name (?)
+            "name": socket_id[:6],  # Prompt user to enter a name (?)
             "lobby_name": lobby_name,
             "hand": [
                 card.Card(1, "Spades"),
@@ -72,6 +72,13 @@ def join_lobby(socket_id, lobby_name):
 
         players[socket_id] = new_player
         lobbies[lobby_name]["players"][socket_id] = new_player
+        sio.emit("admit_players", new_player["name"], room=lobby_name)
+        if len(lobbies[lobby_name]["players"]) != 1:
+            earlier_players = []
+            for player_socket_id in lobbies[lobby_name]["players"]:
+                if player_socket_id != socket_id:
+                    earlier_players.append(players[player_socket_id]["name"])
+            sio.emit("admit_players", ",".join(earlier_players), room=socket_id)
 
 
 # TODO called by player's post
