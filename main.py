@@ -1,11 +1,18 @@
 from flask import Flask
+from markupsafe import escape
+
 import render
 import card
-from markupsafe import escape
+
+from socketio import Server as SocketIOServer, WSGIApp as SocketIOWSGIApp
 
 print("Hello, ERS-OL!")
 
 app = Flask(__name__, static_url_path="", static_folder="static")
+
+sio = SocketIOServer()
+app.wsgi_app = SocketIOWSGIApp(sio, app.wsgi_app)
+
 lobby = {
     "players": [],
     "center": [  # List of cards in the center stack
@@ -52,6 +59,21 @@ def slap(player_id):
 def take(player_id):
     # TODO make the player that won the center stack receive their cards
     pass
+
+
+@sio.event
+def connect(socket_id, environment):
+    print("Socket connected: ", socket_id)
+
+
+@sio.event
+def ping(socket_id, data):
+    sio.emit("pong", data, room=socket_id)
+
+
+@sio.event
+def disconnect(socket_id):
+    print("Socket disconnected: ", socket_id)
 
 
 def startup():
