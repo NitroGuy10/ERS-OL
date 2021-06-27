@@ -8,7 +8,7 @@ var gameArea = {
         this.canvas = document.getElementById("mainCanvas")
         this.context = this.canvas.getContext("2d")
 
-        window.addEventListener('keydown', function (e)
+        window.addEventListener("keydown", function (e)
         {
             if (!gameArea.keys["ArrowRight"] && e.code === "ArrowRight")
             {
@@ -20,7 +20,7 @@ var gameArea = {
             }
             gameArea.keys[e.code] = true
         })
-        window.addEventListener('keyup', function (e)
+        window.addEventListener("keyup", function (e)
         {
             gameArea.keys[e.code] = false
         })
@@ -107,7 +107,7 @@ class Card extends ImgComponent
 
         this.rank = rank // first letter is always capitalized
         this.suit = suit
-        this.type = "Card"        
+        this.type = "Card"
     }
     deal()
     {

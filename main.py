@@ -1,17 +1,23 @@
+"""Module for handling server operations"""
+
 from flask import Flask
+from socketio import Server as SocketIOServer, WSGIApp as SocketIOWSGIApp
+
 from markupsafe import escape
+from re import split as re_split
 
 import render
 import card
 
-from socketio import Server as SocketIOServer, WSGIApp as SocketIOWSGIApp
 
 print("Hello, ERS-OL!")
 
 app = Flask(__name__, static_url_path="", static_folder="static")
-
 sio = SocketIOServer()
 app.wsgi_app = SocketIOWSGIApp(sio, app.wsgi_app)
+
+players = {}
+lobbies = {}
 
 lobby = {
     "players": [],
@@ -21,14 +27,25 @@ lobby = {
 }
 
 
+def normalize(original_string):
+    return "".join(re_split(r"[^0-9A-Za-z_\-]", original_string))
+
+
+@app.route("/")
+def index():
+    return app.send_static_file("index.html")
+
+
 # The first player to join the lobby becomes the host
 def host():
     lobby["players"].append(0)  # TODO temporary
     return join()
 
 
-@app.route("/")
-def join():
+@app.route("/play/<lobby_name>")
+def join(lobby_name):
+    lobby_name = normalize(lobby_name[:20])
+    print(lobby_name)
     if len(lobby["players"]) == 0:
         return host()
     new_player = {

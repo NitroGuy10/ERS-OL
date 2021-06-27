@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>ERS-OL</title>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="/stylesheets/main.css" rel="stylesheet">
+</head>
+
+<body>
+    <h1>ERS-OL</h1>
+    <textarea id="lobbybox" rows="1" cols="20" maxlength="20"></textarea>
+    <p>Enter lobby name and press ENTER</p>
+    <footer id="copyright">&copy; 2021 NitroGuy</footer>
+
+    <script>
+        document.getElementById("lobbybox").addEventListener("keydown", function (event)
+        {
+            if (event.code === "Enter" || event.code === "NumpadEnter")
+            {
+                event.preventDefault()
+                let lobby = document.getElementById("lobbybox").value.split(/[^0-9A-Za-z_\-]/).join("")
+                if (lobby !== null && lobby !== "")
+                {
+                    window.location = ["./play/", lobby].join("")
+                }
+            }
+        })
+    </script>
+</body>
+
+
+</html>

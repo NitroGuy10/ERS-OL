@@ -1,3 +1,5 @@
+"""Render the game template. Yep, that's it."""
+
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from os import walk
 
