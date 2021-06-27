@@ -16,15 +16,9 @@ app = Flask(__name__, static_url_path="", static_folder="static")
 sio = SocketIOServer()
 app.wsgi_app = SocketIOWSGIApp(sio, app.wsgi_app)
 
+MAX_PLAYERS_PER_LOBBY = 2
 players = {}
 lobbies = {}
-
-lobby = {
-    "players": [],
-    "center": [  # List of cards in the center stack
-        card.Card(10, "Clubs")
-    ]
-}
 
 
 def normalize(original_string):
@@ -36,28 +30,48 @@ def index():
     return app.send_static_file("index.html")
 
 
-# The first player to join the lobby becomes the host
-def host():
-    lobby["players"].append(0)  # TODO temporary
-    return join()
-
-
 @app.route("/play/<lobby_name>")
-def join(lobby_name):
-    lobby_name = normalize(lobby_name[:20])
-    print(lobby_name)
-    if len(lobby["players"]) == 0:
-        return host()
-    new_player = {
-        "id": "TODO with websockets",
-        "name": "player",  # Prompt user to enter a name (?)
-        "hand": [
-            card.Card(1, "Spades"),
-            card.Card(12, "Hearts")
-        ]
-    }
-    lobby["players"].append(new_player)
-    return app.send_static_file("game.html")
+def serve_game(lobby_name):
+    if lobby_name == normalize(lobby_name[:20]):
+        return app.send_static_file("game.html")
+    else:
+        return "<p>invalid lobby name</p>"
+
+
+@sio.event
+def join_lobby(socket_id, lobby_name):
+    if type(lobby_name) != str:
+        return
+
+    if lobby_name != normalize(lobby_name[:20]):
+        sio.emit("denied_entry", "invalid lobby name", room=socket_id)
+    elif lobby_name in lobbies and len(lobbies[lobby_name]["players"]) >= MAX_PLAYERS_PER_LOBBY:
+        sio.emit("denied_entry", "lobby is full (" + str(MAX_PLAYERS_PER_LOBBY) + " players)", room=socket_id)
+    # TODO deny if lobby's game has started
+    else:
+        sio.enter_room(socket_id, lobby_name)
+        new_player = {
+            "socket_id": socket_id,
+            "name": "player",  # Prompt user to enter a name (?)
+            "lobby_name": lobby_name,
+            "hand": [
+                card.Card(1, "Spades"),
+                card.Card(12, "Hearts"),
+                card.Card(10, "Clubs")
+            ]
+        }
+        if lobby_name not in lobbies:
+            # The first player to join the lobby becomes the host
+            new_player["isHost"] = True
+            lobbies[lobby_name] = {
+                "name": lobby_name,
+                "host": new_player,
+                "players": {}
+            }
+            print("Lobby " + lobby_name + " created")
+
+        players[socket_id] = new_player
+        lobbies[lobby_name]["players"][socket_id] = new_player
 
 
 # TODO called by player's post
@@ -80,6 +94,7 @@ def take(player_id):
 
 @sio.event
 def connect(socket_id, environment):
+    # It can be assumed that sockets will only connect from /play/*
     print("Socket connected: ", socket_id)
 
 
@@ -90,6 +105,14 @@ def ping(socket_id, data):
 
 @sio.event
 def disconnect(socket_id):
+    if socket_id in players:
+        lobby_name = players[socket_id]["lobby_name"]
+        sio.emit("game_over", players[socket_id]["name"] + " disconnected", room=lobby_name)
+        del lobbies[lobby_name]["players"][socket_id]
+        if len(lobbies[lobby_name]["players"]) == 0:
+            del lobbies[lobby_name]
+            print("Lobby " + lobby_name + " deleted; all players disconnected")
+        del players[socket_id]
     print("Socket disconnected: ", socket_id)
 
 

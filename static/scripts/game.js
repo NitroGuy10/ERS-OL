@@ -5,6 +5,8 @@ var gameArea = {
     audio: {},
     start: function ()
     {
+        socket.emit("join_lobby", window.location.href.split("/")[window.location.href.split("/").length - 1])
+
         this.canvas = document.getElementById("mainCanvas")
         this.context = this.canvas.getContext("2d")
 
