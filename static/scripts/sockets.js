@@ -1,7 +1,5 @@
 var socket = io()
 
-socket.emit("ping", "13375P34K")
-
 socket.on("pong", function (data)
 {
     console.log("Pong! ...with a side of: " + data)
@@ -33,3 +31,35 @@ socket.on("admit_players", function (playerNames)
         }
     }
 })
+
+socket.on("become_host", function (isHost)
+{
+    becomeHost(isHost)
+})
+
+function becomeHost(isHost)
+{
+    for (let setting of document.getElementsByClassName("hostSetting"))
+    {
+        // isHost will either be "" for yes or "n" for no
+        setting.disabled = isHost
+    }
+    if (isHost === "")
+    {
+        document.getElementById("youAreTheHost").style.display = ""
+    }
+    else
+    {
+        document.getElementById("youAreTheHost").style.display = "none"
+    }
+}
+
+function declareSettings()
+{
+    let settings = {}
+    for (let settingElement of document.getElementsByClassName("hostSetting"))
+    {
+        settings[settingElement.id] = settingElement.checked
+    }
+    socket.emit("declare_settings", settings)
+}

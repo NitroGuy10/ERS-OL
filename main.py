@@ -66,19 +66,29 @@ def join_lobby(socket_id, lobby_name):
             lobbies[lobby_name] = {
                 "name": lobby_name,
                 "host": new_player,
-                "players": {}
+                "players": {},
+                "settings": {}
             }
             print("Lobby " + lobby_name + " created")
 
         players[socket_id] = new_player
         lobbies[lobby_name]["players"][socket_id] = new_player
         sio.emit("admit_players", new_player["name"], room=lobby_name)
-        if len(lobbies[lobby_name]["players"]) != 1:
+        if len(lobbies[lobby_name]["players"]) == 1:
+            sio.emit("become_host", "", room=socket_id)
+        else:
             earlier_players = []
             for player_socket_id in lobbies[lobby_name]["players"]:
                 if player_socket_id != socket_id:
                     earlier_players.append(players[player_socket_id]["name"])
             sio.emit("admit_players", ",".join(earlier_players), room=socket_id)
+
+
+@sio.event
+def declare_settings(socket_id, settings):
+    lobby_name = players[socket_id]["lobby_name"]
+    if lobbies[lobby_name]["host"] is players[socket_id]:
+        lobbies[lobby_name]["settings"] = settings
 
 
 # TODO called by player's post

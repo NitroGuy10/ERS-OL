@@ -8,33 +8,63 @@
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {
-            text-align: center;
-            font-family: Arial, Helvetica, sans-serif;
-            color: #eee;
-            background-color: #333;
-        }
-
-        p {
-            font-size: 20px;
-        }
-
-        h1 {
-            font-size: 50px;
-        }
-
-        img,
-        audio {
-            visibility: hidden;
-        }
-    </style>
+    <link href="/stylesheets/main.css" rel="stylesheet">
 </head>
 
 <body onload="init()">
     <h1>ERS-OL</h1>
-    <p>Hello, player!</p>
     <canvas id="mainCanvas" width="500" height="500" style="border:1px solid black;"></canvas>
+    <table id="hostSettingsTable" disabled>
+        <tr id="youAreTheHost" style="display: none;">
+            <td colspan="4">
+                <p><b>You are the host</u></b>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <p>Doubles<input id="slapDoubles" class="hostSetting" type="checkbox" checked disabled></p>
+            </td>
+            <td>
+                <p>Sandwiches<input id="slapSandwiches" class="hostSetting" type="checkbox" checked disabled></p>
+            </td>
+            <td>
+                <p>10-Sandwiches<input id="slapTenSandwiches" class="hostSetting" type="checkbox" disabled></p>
+            </td>
+            <td>
+                <p>Top-Bottom<input id="slapTopBottom" class="hostSetting" type="checkbox" checked disabled></p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <p>Adds to 10<input id="slapAddToTen" class="hostSetting" type="checkbox" checked disabled></p>
+            </td>
+            <td>
+                <p>"10" ends face card round<input id="tenEndsFaceCardRound" class="hostSetting" type="checkbox"
+                        disabled></p>
+            </td>
+            <td>
+                <p>Marriage<input id="slapMarriage" class="hostSetting" type="checkbox" checked disabled></p>
+            </td>
+            <td>
+                <p>Divorce<input id="slapDivorce" class="hostSetting" type="checkbox" disabled></p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <p>3 Ascending/Descending<input id="slapThreeAscDesc" class="hostSetting" type="checkbox" disabled></p>
+            </td>
+            <td>
+                <p>4 Ascending/Descending<input id="slapFourAscDesc" class="hostSetting" type="checkbox" checked
+                        disabled></p>
+            </td>
+            <td>
+                <p>Slap all 10s<input id="slapTens" class="hostSetting" type="checkbox" disabled></p>
+            </td>
+            <td>
+                <p>Slap all 7s<input id="slapSevens" class="hostSetting" type="checkbox" disabled></p>
+            </td>
+        </tr>
+    </table>
     <footer id="copyright">&copy; 2021 NitroGuy</footer>
 
     <div id="cardImages" hidden>
@@ -43,14 +73,8 @@
         {% endfor %}
     </div>
 
-    <div id="audio" hidden>
-        <audio src="/sfx/burn.wav" id="audioBurn" preload="auto"></audio>
-        <audio src="/sfx/deal.wav" id="audioDeal" preload="auto"></audio>
-        <audio src="/sfx/deal_many.wav" id="audioDealMany" preload="auto"></audio>
-        <audio src="/sfx/slap.wav" id="audioSlap" preload="auto"></audio>
-    </div>
-
     <script src="/scripts/socket.io/socket.io.js"></script>
+    <script src="/scripts/howler.js/howler.core.min.js"></script>
     <script src="/scripts/game.js"></script>
     <script src="/scripts/sockets.js"></script>
 </body>

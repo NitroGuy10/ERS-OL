@@ -19,6 +19,7 @@ var gameArea = {
             }
             else if (!gameArea.keys["ArrowUp"] && e.code === "ArrowUp")
             {
+                e.preventDefault()
                 gameArea.components["cards/cardSpadesA.png"].deal()
             }
             gameArea.keys[e.code] = true
@@ -28,10 +29,27 @@ var gameArea = {
             gameArea.keys[e.code] = false
         })
 
-        this.audio.burn = document.getElementById("audioBurn")
-        this.audio.deal = document.getElementById("audioDeal")
-        this.audio.dealMany = document.getElementById("audioDealMany")
-        this.audio.slap = document.getElementById("audioSlap")
+        document.getElementById("hostSettingsTable").addEventListener("change", function (e)
+        {
+            declareSettings()
+        })
+
+        this.audio.burn = new Howl({
+            src: ["../sfx/burn.wav"],
+            volume: 0.5
+        })
+        this.audio.deal = new Howl({
+            src: ["../sfx/deal.wav"],
+            volume: 0.5
+        })
+        this.audio.dealMany = new Howl({
+            src: ["../sfx/deal_many.wav"],
+            volume: 0.5
+        })
+        this.audio.slap = new Howl({
+            src: ["../sfx/slap.wav"],
+            volume: 0.5
+        })
 
         window.requestAnimationFrame(step)
     },
@@ -121,7 +139,6 @@ class Card extends ImgComponent
             this.x = (gameArea.canvas.width / 2)
             this.y = gameArea.canvas.height + this.height
             this.animating = true
-            gameArea.audio.deal.currentTime = 0
             gameArea.audio.deal.play()
             this.animationStart = gameArea.timestamp
             this.currentAnimations.deal = this.dealMovement
@@ -182,10 +199,10 @@ class TextComponent
         gameArea.context.save()
         gameArea.context.translate(this.x, this.y)
         gameArea.context.rotate(this.rotation)
-        gameArea.context.font = this.font;
-        gameArea.context.fillStyle = this.fillStyle;
-        gameArea.context.textAlign = "center";
-        gameArea.context.fillText(this.text, 0, 0);
+        gameArea.context.font = this.font
+        gameArea.context.fillStyle = this.fillStyle
+        gameArea.context.textAlign = "center"
+        gameArea.context.fillText(this.text, 0, 0)
         gameArea.context.restore()
     }
     hide()
@@ -215,6 +232,7 @@ function step(timestamp)
 
 function init()
 {
+    becomeHost("n")
     gameArea.start()
     for (let rank = 1; rank < 14; rank++)
     {
