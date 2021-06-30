@@ -14,12 +14,19 @@
 <body onload="init()">
     <h1>ERS-OL</h1>
     <canvas id="mainCanvas" width="500" height="500" style="border:1px solid black;"></canvas>
-    <table id="hostSettingsTable" disabled>
-        <tr id="youAreTheHost" style="display: none;">
-            <td colspan="4">
-                <p><b>You are the host</u></b>
-            </td>
-        </tr>
+    <table id="hostSettingsTable">
+        <tbody id="youAreTheHost" style="display: none;">
+            <tr>
+                <td colspan="4">
+                    <p><b>You are the host</b></p>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="4">
+                    <button onclick="startGame()" id="startGameButton" disabled>Start Game</button>
+                </td>
+            </tr>
+        </tbody>
         <tr>
             <td>
                 <p>Doubles<input id="slapDoubles" class="hostSetting" type="checkbox" checked disabled></p>

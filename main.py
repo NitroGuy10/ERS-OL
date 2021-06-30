@@ -5,6 +5,7 @@ from socketio import Server as SocketIOServer, WSGIApp as SocketIOWSGIApp
 
 from markupsafe import escape
 from re import split as re_split
+from random import randrange
 
 import render
 import card
@@ -64,6 +65,7 @@ def join_lobby(socket_id, lobby_name):
             # The first player to join the lobby becomes the host
             new_player["isHost"] = True
             lobbies[lobby_name] = {
+                "in_progress": False,
                 "name": lobby_name,
                 "host": new_player,
                 "players": {},
@@ -89,6 +91,21 @@ def declare_settings(socket_id, settings):
     lobby_name = players[socket_id]["lobby_name"]
     if lobbies[lobby_name]["host"] is players[socket_id]:
         lobbies[lobby_name]["settings"] = settings
+        sio.emit("update_settings", settings, room=lobby_name, skip_sid=socket_id)
+
+
+@sio.event
+def start_game(socket_id, settings):
+    lobby_name = players[socket_id]["lobby_name"]
+    if lobbies[lobby_name]["host"] is players[socket_id]:
+        declare_settings(socket_id, settings)
+        lobbies[lobby_name]["in_progress"] = True
+
+        first_player_socket_id = list(lobbies[lobby_name]["players"].keys()
+                                      )[randrange(0, len(lobbies[lobby_name]["players"]))]
+        sio.emit("prompt_deal", room=first_player_socket_id)
+        sio.emit("players_turn", players[first_player_socket_id]["name"],
+                 room=lobby_name, skip_sid=first_player_socket_id)  # This is already implied for the starting player
 
 
 # TODO called by player's post

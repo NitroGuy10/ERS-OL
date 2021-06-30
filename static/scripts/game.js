@@ -230,6 +230,16 @@ function step(timestamp)
     window.requestAnimationFrame(step)
 }
 
+function getSettings()
+{
+    let settings = {}
+    for (let settingElement of document.getElementsByClassName("hostSetting"))
+    {
+        settings[settingElement.id] = settingElement.checked
+    }
+    return settings
+}
+
 function init()
 {
     becomeHost("n")

@@ -13,12 +13,16 @@ socket.on("denied_entry", function (reason)
 
 socket.on("admit_players", function (playerNames)
 {
+    if (gameArea.players.length == 0)
+    {
+        gameArea.components["statusText"].hide()
+    }
+    else
+    {
+        document.getElementById("startGameButton").disabled = ""
+    }
     for (let playerName of playerNames.split(","))
     {
-        if (gameArea.players.length == 0)
-        {
-            gameArea.components["statusText"].hide()
-        }
         gameArea.players.push(playerName)
 
         gameArea.drawList.push(new TextComponent(playerName, playerName, 0, 0, 0, "20px Arial, Comic Sans MS, sans-serif", "#eee"))
@@ -56,10 +60,29 @@ function becomeHost(isHost)
 
 function declareSettings()
 {
-    let settings = {}
-    for (let settingElement of document.getElementsByClassName("hostSetting"))
-    {
-        settings[settingElement.id] = settingElement.checked
-    }
-    socket.emit("declare_settings", settings)
+    socket.emit("declare_settings", getSettings())
 }
+
+socket.on("update_settings", function (settings)
+{
+    for (let setting in settings)
+    {
+        document.getElementById(setting).checked = settings[setting]
+    }
+})
+
+function startGame ()
+{
+    becomeHost("n")
+    socket.emit("start_game", getSettings())
+}
+
+socket.on("players_turn", function (playerName)
+{
+    gameArea.components[playerName].fillStyle = "#81d4fa"
+})
+
+socket.on("prompt_deal", function ()
+{
+    gameArea.components[gameArea.players[0]].fillStyle = "#81d4fa"
+})
