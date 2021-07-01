@@ -9,7 +9,7 @@ var gameArea = {
     centerCardXOffsets: [-20, 0, 20],
     centerCardYOffsets: [10, -10, 10],
     nextCenterCardOffsetIndex: 0,
-    centerStackHeight: 0,
+    centerStack: [],
     start: function ()
     {
         socket.emit("join_lobby", window.location.href.split("/")[window.location.href.split("/").length - 1])
@@ -148,11 +148,13 @@ class Card extends ImgComponent
         if (!this.animating)
         {
             this.hide()
+            gameArea.components["promptArrow"].hide()
             gameArea.drawList.push(this)
-            this.x = (gameArea.canvas.width / 2)
+            gameArea.centerStack.push(this)
+            this.targetXOffset = gameArea.centerCardXOffsets[gameArea.nextCenterCardOffsetIndex] + (15 * Math.sin((gameArea.centerStack.length * Math.PI) / 11))
+            this.targetYOffset = gameArea.centerCardYOffsets[gameArea.nextCenterCardOffsetIndex] + (15 * Math.cos((gameArea.centerStack.length * Math.PI) / 11))
+            this.x = (gameArea.canvas.width / 2) + this.targetXOffset
             this.y = gameArea.canvas.height + this.height
-            this.targetXOffset = gameArea.centerCardXOffsets[gameArea.nextCenterCardOffsetIndex] + (15 * Math.sin((gameArea.centerStackHeight * Math.PI) / 11))
-            this.targetYOffset = gameArea.centerCardYOffsets[gameArea.nextCenterCardOffsetIndex] + (15 * Math.cos((gameArea.centerStackHeight * Math.PI) / 11))
             this.targetRotation = gameArea.centerCardRotations[gameArea.nextCenterCardOffsetIndex]
             gameArea.nextCenterCardOffsetIndex = (gameArea.nextCenterCardOffsetIndex + 1) % 3
             gameArea.centerStackHeight++
@@ -168,8 +170,8 @@ class Card extends ImgComponent
         const ELAPSED = gameArea.timestamp - thisCard.animationStart
         if (ELAPSED <= Card.DEAL_ANIMATION_LENGTH)
         {
-            thisCard.y = (gameArea.canvas.height / 2) * Math.sin(ELAPSED / (Card.DEAL_ANIMATION_LENGTH / (-0.5 * Math.PI))) + (gameArea.canvas.height)
-            thisCard.rotation = (Math.PI / 2) * Math.sin(ELAPSED / (Card.DEAL_ANIMATION_LENGTH / (-0.5 * Math.PI))) + (Math.PI / 2)
+            thisCard.y = ((gameArea.canvas.height / 2) + thisCard.targetYOffset) * Math.sin(ELAPSED / (Card.DEAL_ANIMATION_LENGTH / (-0.5 * Math.PI))) + (gameArea.canvas.height + (thisCard.targetYOffset * 2))
+            thisCard.rotation = ((Math.PI / 2) - thisCard.targetRotation) * Math.sin(ELAPSED / (Card.DEAL_ANIMATION_LENGTH / (-0.5 * Math.PI))) + (Math.PI / 2)
             console.log("deal moving!")
         }
         else
@@ -271,5 +273,6 @@ function init()
         new Card(rank, "Diamonds", 0, 0)
         new Card(rank, "Clubs", 0, 0)
     }
+    new ImgComponent("promptArrow", document.getElementById("promptArrow"), gameArea.canvas.width * (5 / 6), gameArea.canvas.height * (5 / 6), 100, 100, 0)
     gameArea.drawList.push(new TextComponent("statusText", "Connecting...", gameArea.canvas.width / 2, gameArea.canvas.height / 2, 0, "40px Arial, Comic Sans MS, sans-serif", "#eee"))
 }

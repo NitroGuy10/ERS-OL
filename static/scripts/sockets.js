@@ -25,13 +25,13 @@ socket.on("admit_players", function (playerNames)
     {
         gameArea.players.push(playerName)
 
-        gameArea.drawList.push(new TextComponent(playerName, playerName, 0, 0, 0, "20px Arial, Comic Sans MS, sans-serif", "#eee"))
+        gameArea.drawList.push(new TextComponent("player_" + playerName, playerName, 0, 0, 0, "20px Arial, Comic Sans MS, sans-serif", "#eee"))
 
         for (let i = 0; i < gameArea.players.length; i++)
         {
             let theta = (i * 2 * Math.PI / gameArea.players.length) + (Math.PI / 2)
-            gameArea.components[gameArea.players[i]].x = 200 * Math.cos(theta) + gameArea.canvas.width / 2
-            gameArea.components[gameArea.players[i]].y = 200 * Math.sin(theta) + gameArea.canvas.height / 2
+            gameArea.components["player_" + gameArea.players[i]].x = 200 * Math.cos(theta) + gameArea.canvas.width / 2
+            gameArea.components["player_" + gameArea.players[i]].y = 200 * Math.sin(theta) + gameArea.canvas.height / 2
         }
     }
 })
@@ -79,12 +79,14 @@ function startGame ()
 
 socket.on("players_turn", function (playerName)
 {
-    gameArea.components[playerName].fillStyle = "#81d4fa"
+    gameArea.components["player_" + playerName].fillStyle = "#81d4fa"
 })
 
 socket.on("prompt_deal", function ()
 {
-    gameArea.components[gameArea.players[0]].fillStyle = "#81d4fa"
+    gameArea.components["player_" + gameArea.players[0]].fillStyle = "#81d4fa"
+    gameArea.components["promptArrow"].rotation = Math.PI
+    gameArea.drawList.push(gameArea.components["promptArrow"])
     userIsDealing = true
 })
 
