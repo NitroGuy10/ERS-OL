@@ -17,7 +17,7 @@ app = Flask(__name__, static_url_path="", static_folder="static")
 sio = SocketIOServer()
 app.wsgi_app = SocketIOWSGIApp(sio, app.wsgi_app)
 
-MAX_PLAYERS_PER_LOBBY = 2
+MAX_PLAYERS_PER_LOBBY = 8
 players = {}
 lobbies = {}
 
@@ -155,7 +155,8 @@ def deal(socket_id):
     if socket_id == lobby["current_dealer_sid"]:
         dealt_card = players[socket_id]["hand"].pop(0)
         lobby["center_pile"].insert(0, dealt_card)
-        sio.emit("witness_deal", dealt_card.get_id(), room=lobby["name"])
+        sio.emit("witness_deal",
+                 {"cardID": dealt_card.get_id(), "dealerName": players[socket_id]["name"]}, room=lobby["name"])
 
         if dealt_card.get_attempts_minus_one() > -1:  # A face card round is started
             lobby["face_card_attempts_left"] = dealt_card.get_attempts_minus_one()

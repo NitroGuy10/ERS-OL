@@ -8,8 +8,8 @@ class ImgComponent
         this.y = y
         this.width = width
         this.height = height
-        this.rotation = rotation
 
+        this.rotation = rotation
         this.type = "ImgComponent"
         this.animating = false
         this.currentAnimations = {}
@@ -45,32 +45,41 @@ class ImgComponent
 class Card extends ImgComponent
 {
     static RANK_NAME = ["NONE", "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
-    static DEAL_ANIMATION_LENGTH = 100 // in milliseconds
+    static DEAL_ANIMATION_LENGTH = 100  // in milliseconds
 
     constructor(rank, suit, x, y, rotation)
     {
         const NAME = ["cards/card", suit, Card.RANK_NAME[rank], ".png"].join("")
-        super(NAME, document.getElementById(NAME), x, y, 140, 190, rotation, true)
+        super(NAME, document.getElementById(NAME), x, y, 140, 190, rotation)
 
-        this.rank = rank // first letter is always capitalized
+        this.rank = rank  // first letter is always capitalized
         this.suit = suit
         this.type = "Card"
         this.targetRotation = 0
         this.targetXOffset = 0
         this.targetYOffset = 0
+
+        // For origin values, (0, 0) refers to the center of the canvas
+        this.originX = 0
+        this.originY = 0
     }
-    deal()
+    deal(dealerIndex)
     {
         if (!this.animating)
         {
             this.hide()
             gameArea.components["promptArrow"].hide()
+
+            let theta = (dealerIndex * 2 * Math.PI / gameArea.numPlayers) + (Math.PI / 2)
+            this.originX = (gameArea.canvas.width / 2) * Math.cos(theta)
+            this.originY = (gameArea.canvas.height / 2) * Math.sin(theta)
+
             gameArea.drawList.push(this)
             gameArea.centerStack.push(this)
             this.targetXOffset = gameArea.centerCardXOffsets[gameArea.nextCenterCardOffsetIndex] + (15 * Math.sin((gameArea.centerStack.length * Math.PI) / 11))
             this.targetYOffset = gameArea.centerCardYOffsets[gameArea.nextCenterCardOffsetIndex] + (15 * Math.cos((gameArea.centerStack.length * Math.PI) / 11))
-            this.x = (gameArea.canvas.width / 2) + this.targetXOffset
-            this.y = gameArea.canvas.height + this.height
+            this.x = this.originX
+            this.y = this.originY
             this.targetRotation = gameArea.centerCardRotations[gameArea.nextCenterCardOffsetIndex]
             gameArea.nextCenterCardOffsetIndex = (gameArea.nextCenterCardOffsetIndex + 1) % 3
             gameArea.centerStackHeight++
@@ -85,8 +94,9 @@ class Card extends ImgComponent
         const ELAPSED = gameArea.timestamp - thisCard.animationStart
         if (ELAPSED <= Card.DEAL_ANIMATION_LENGTH)
         {
-            thisCard.y = ((gameArea.canvas.height / 2) + thisCard.targetYOffset) * Math.sin(ELAPSED / (Card.DEAL_ANIMATION_LENGTH / (-0.5 * Math.PI))) + (gameArea.canvas.height + (thisCard.targetYOffset * 2))
-            thisCard.rotation = ((Math.PI / 2) - thisCard.targetRotation) * Math.sin(ELAPSED / (Card.DEAL_ANIMATION_LENGTH / (-0.5 * Math.PI))) + (Math.PI / 2)
+            thisCard.x = ((gameArea.canvas.width  / 2) + thisCard.targetXOffset) + (thisCard.originX * Math.sin(ELAPSED * -0.5 * Math.PI / Card.DEAL_ANIMATION_LENGTH) + thisCard.originX)
+            thisCard.y = ((gameArea.canvas.height / 2) + thisCard.targetYOffset) + (thisCard.originY * Math.sin(ELAPSED * -0.5 * Math.PI / Card.DEAL_ANIMATION_LENGTH) + thisCard.originY)
+            thisCard.rotation = ((Math.PI / 2) - thisCard.targetRotation)  * Math.sin(ELAPSED / (Card.DEAL_ANIMATION_LENGTH / (-0.5 * Math.PI))) + (Math.PI / 2)
         }
         else
         {
@@ -97,6 +107,7 @@ class Card extends ImgComponent
             delete thisCard.currentAnimations.deal
         }
     }
+    
 }
 
 class TextComponent

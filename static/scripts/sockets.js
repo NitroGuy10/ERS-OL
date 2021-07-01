@@ -29,8 +29,8 @@ socket.on("admit_players", function (playerNames)
         for (let i = 0; i < gameArea.numPlayers; i++)
         {
             let theta = (i * 2 * Math.PI / gameArea.numPlayers) + (Math.PI / 2)
-            players[i].component.x = 200 * Math.cos(theta) + gameArea.canvas.width / 2
-            players[i].component.y = 200 * Math.sin(theta) + gameArea.canvas.height / 2
+            players[i].component.x = (.4 * gameArea.canvas.width ) * Math.cos(theta) + gameArea.canvas.width / 2
+            players[i].component.y = (.4 * gameArea.canvas.height) * Math.sin(theta) + gameArea.canvas.height / 2
         }
     }
 })
@@ -70,7 +70,7 @@ socket.on("update_settings", function (settings)
     }
 })
 
-function startGame ()
+function startGame()
 {
     becomeHost("n")
     socket.emit("start_game", getSettings())
@@ -81,7 +81,7 @@ socket.on("players_turn", function (playerName)
     makeTurn(playerName)
 })
 
-function makeTurn (playerName)
+function makeTurn(playerName)
 {
     for (let player in gameArea.players)
     {
@@ -98,9 +98,9 @@ socket.on("prompt_deal", function ()
     gameArea.userIsDealing = true
 })
 
-socket.on("witness_deal", function (cardID)
+socket.on("witness_deal", function (info)
 {
-    gameArea.components[cardID].deal()
+    gameArea.components[info.cardID].deal(Object.keys(gameArea.players).indexOf(info.dealerName))
 })
 
 socket.on("game_over", function (reason)
