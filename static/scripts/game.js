@@ -38,6 +38,7 @@ var gameArea = {
                 e.preventDefault()
                 if (gameArea.userIsReceiving)
                 {
+                    gameArea.components["promptArrow"].hide()
                     socket.emit("receive")
                     gameArea.userIsReceiving = false
                 }
@@ -45,9 +46,6 @@ var gameArea = {
                 {
                     // slap()
                 }
-                gameArea.recipientIndex = 0
-                gameArea.receiveAnimationStart = gameArea.timestamp
-                gameArea.audio.dealMany.play()
             }
             gameArea.keys[e.code] = true
         })

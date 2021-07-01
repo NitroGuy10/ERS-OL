@@ -116,3 +116,11 @@ socket.on("prompt_receive", function ()
     gameArea.drawList.push(gameArea.components["promptArrow"])
     gameArea.userIsReceiving = true
 })
+
+socket.on("witness_receive", function (recipientName)
+{
+    gameArea.recipientIndex = Object.keys(gameArea.players).indexOf(recipientName)
+    gameArea.receiveAnimationStart = gameArea.timestamp
+    gameArea.audio.dealMany.play()
+})
+

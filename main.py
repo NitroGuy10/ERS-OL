@@ -166,6 +166,7 @@ def deal(socket_id):
             prompt_next_deal(lobby)
         elif lobby["face_card_attempts_left"] == 0:  # The face card round initiator receives their cards
             lobby["whose_turn_index"] = lobby["face_card_initiator_index"]
+            lobby["current_dealer_sid"] = ""
             lobby["face_card_initiator_index"] = -1
             lobby["face_card_attempts_left"] = -1
             prompt_receive(lobby)
@@ -174,16 +175,21 @@ def deal(socket_id):
             prompt_deal(lobby)
 
 
+@sio.event
+def receive(socket_id):
+    lobby = lobbies[players[socket_id]["lobby_name"]]
+    if socket_id == lobby["current_recipient_sid"]:
+        lobby["current_recipient_sid"] = ""
+        lobby["face_card_attempts_left"] = -1
+        sio.emit("witness_receive", lobby["players"][socket_id]["name"], room=lobby["name"])
+        lobby["players"][socket_id]["hand"].extend(lobby["center_pile"])
+        lobby["center_pile"] = []
+        prompt_deal(lobby)
+
+
 # TODO called by player's post
 def slap(player_id):
     # TODO slap the deck and do all that that implies
-    pass
-
-
-# TODO called by player's post
-def take(player_id):
-    # TODO make the player that won the center stack receive their cards
-    # lobby["face_card_attempts_left"] = -1
     pass
 
 
