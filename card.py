@@ -13,3 +13,15 @@ class Card:
 
     def get_id(self):
         return "cards/card" + self.suit + RANK_NAME[self.rank] + ".png"
+
+    def get_attempts_minus_one(self):
+        if self.rank == 11:
+            return 0
+        elif self.rank == 12:
+            return 1
+        elif self.rank == 13:
+            return 2
+        elif self.rank == 1:
+            return 3
+        else:
+            return -1

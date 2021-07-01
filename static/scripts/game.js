@@ -7,6 +7,7 @@ var gameArea = {
     user: null,
     numPlayers: 0,
     userIsDealing: false,
+    userIsReceiving: false,
     centerCardRotations: [Math.PI / -13, 0, Math.PI / 13],
     centerCardXOffsets: [-20, 0, 20],
     centerCardYOffsets: [10, -10, 10],

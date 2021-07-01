@@ -102,3 +102,16 @@ socket.on("witness_deal", function (cardID)
 {
     gameArea.components[cardID].deal()
 })
+
+socket.on("game_over", function (reason)
+{
+    console.log("Game Over! - " + reason)
+})
+
+socket.on("prompt_receive", function ()
+{
+    makeTurn(gameArea.user.name)
+    gameArea.components["promptArrow"].rotation = 0
+    gameArea.drawList.push(gameArea.components["promptArrow"])
+    gameArea.userIsReceiving = true
+})

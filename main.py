@@ -42,6 +42,13 @@ def prompt_deal(lobby):
              room=lobby["name"], skip_sid=dealer_socket_id)  # This is already implied for the dealing player
 
 
+def prompt_next_deal(lobby):
+    if not set_next_turn_index(lobby):
+        sio.emit("game_over", "Did you win? I don't know!", room=lobby["name"])
+    else:
+        prompt_deal(lobby)
+
+
 def prompt_receive(lobby):
     recipient_socket_id = lobby["player_order"][lobby["whose_turn_index"]]
     lobby["current_recipient_sid"] = recipient_socket_id
@@ -84,7 +91,9 @@ def join_lobby(socket_id, lobby_name):
             "hand": [
                 card.Card(1, "Spades"),
                 card.Card(12, "Hearts"),
-                card.Card(10, "Clubs")
+                card.Card(9, "Clubs"),
+                card.Card(2, "Diamonds"),
+                card.Card(8, "Diamonds"),
             ]
         }
         if lobby_name not in lobbies:
@@ -96,6 +105,7 @@ def join_lobby(socket_id, lobby_name):
                 "host": new_player,
                 "current_dealer_sid": "",
                 "current_recipient_sid": "",
+                "face_card_initiator_sid": "",
                 "face_card_attempts_left": -1,
                 "players": {},
                 "player_order": [],
@@ -143,14 +153,24 @@ def start_game(socket_id, settings):
 def deal(socket_id):
     lobby = lobbies[players[socket_id]["lobby_name"]]
     if socket_id == lobby["current_dealer_sid"]:
-        current_card = players[socket_id]["hand"].pop(0)
-        lobby["center_pile"].insert(0, current_card)
-        sio.emit("witness_deal", current_card.get_id(), room=lobby["name"])
-    # TODO determine current_dealer / current_recipient
-    if lobby["face_card_attempts_left"] == -1:
-        pass
-    set_next_turn_index(lobby)  # TODO handle the return value of this function call
-    prompt_deal(lobby)  # TODO temporary
+        dealt_card = players[socket_id]["hand"].pop(0)
+        lobby["center_pile"].insert(0, dealt_card)
+        sio.emit("witness_deal", dealt_card.get_id(), room=lobby["name"])
+
+        if dealt_card.get_attempts_minus_one() > -1:  # A face card round is started
+            lobby["face_card_attempts_left"] = dealt_card.get_attempts_minus_one()
+            lobby["face_card_initiator_index"] = lobby["whose_turn_index"]
+            prompt_next_deal(lobby)
+        elif lobby["face_card_attempts_left"] == -1:  # The game continues normally
+            prompt_next_deal(lobby)
+        elif lobby["face_card_attempts_left"] == 0:  # The face card round initiator receives their cards
+            lobby["whose_turn_index"] = lobby["face_card_initiator_index"]
+            lobby["face_card_initiator_index"] = -1
+            lobby["face_card_attempts_left"] = -1
+            prompt_receive(lobby)
+        else:  # The current dealer must deal another card
+            lobby["face_card_attempts_left"] -= 1
+            prompt_deal(lobby)
 
 
 # TODO called by player's post
@@ -162,6 +182,7 @@ def slap(player_id):
 # TODO called by player's post
 def take(player_id):
     # TODO make the player that won the center stack receive their cards
+    # lobby["face_card_attempts_left"] = -1
     pass
 
 
