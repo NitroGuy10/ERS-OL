@@ -110,6 +110,7 @@ socket.on("game_over", function (reason)
 
 socket.on("prompt_receive", function ()
 {
+    // This signaling is kind of overpowered but eh whatever
     makeTurn(gameArea.user.name)
     gameArea.components["promptArrow"].rotation = 0
     gameArea.drawList.push(gameArea.components["promptArrow"])

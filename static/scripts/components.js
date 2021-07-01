@@ -46,6 +46,7 @@ class Card extends ImgComponent
 {
     static RANK_NAME = ["NONE", "A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"]
     static DEAL_ANIMATION_LENGTH = 100  // in milliseconds
+    static RECEIVE_ANIMATION_LENGTH = 300  // in milliseconds
 
     constructor(rank, suit, x, y, rotation)
     {
@@ -105,6 +106,35 @@ class Card extends ImgComponent
             thisCard.rotation = thisCard.targetRotation
             thisCard.animating = false
             delete thisCard.currentAnimations.deal
+        }
+    }
+    receive(recipientIndex)
+    {
+        if (!this.animating)
+        {
+            let theta = (recipientIndex * 2 * Math.PI / gameArea.numPlayers) + (Math.PI / 2)
+            this.originX = (gameArea.canvas.width / 2) * Math.cos(theta)
+            this.originY = (gameArea.canvas.height / 2) * Math.sin(theta)
+
+            this.animating = true
+            this.animationStart = gameArea.timestamp
+            this.currentAnimations.receive = this.receiveMovement
+        }
+    }
+    receiveMovement(thisCard)
+    {
+        const TIME_LEFT = Card.RECEIVE_ANIMATION_LENGTH + (thisCard.animationStart - gameArea.timestamp)
+        if (TIME_LEFT >= -Card.RECEIVE_ANIMATION_LENGTH)
+        {
+            thisCard.x = ((gameArea.canvas.width  / 2) + thisCard.targetXOffset) + (thisCard.originX * Math.sin(TIME_LEFT * -0.5 * Math.PI / Card.RECEIVE_ANIMATION_LENGTH) + thisCard.originX)
+            thisCard.y = ((gameArea.canvas.height / 2) + thisCard.targetYOffset) + (thisCard.originY * Math.sin(TIME_LEFT * -0.5 * Math.PI / Card.RECEIVE_ANIMATION_LENGTH) + thisCard.originY)
+            thisCard.rotation = ((Math.PI / 2) - thisCard.targetRotation)  * Math.sin(TIME_LEFT / (Card.RECEIVE_ANIMATION_LENGTH / (-0.5 * Math.PI))) + (Math.PI / 2)
+        }
+        else
+        {
+            thisCard.hide()
+            thisCard.animating = false
+            delete thisCard.currentAnimations.receive
         }
     }
     

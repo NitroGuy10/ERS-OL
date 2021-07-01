@@ -8,6 +8,8 @@ var gameArea = {
     numPlayers: 0,
     userIsDealing: false,
     userIsReceiving: false,
+    receiveAnimationStart: -1,
+    recipientIndex: -1,
     centerCardRotations: [Math.PI / -13, 0, Math.PI / 13],
     centerCardXOffsets: [-20, 0, 20],
     centerCardYOffsets: [10, -10, 10],
@@ -31,9 +33,21 @@ var gameArea = {
                     gameArea.userIsDealing = false
                 }
             }
-            else if (!gameArea.keys["ArrowDown"] && e.code === "ArrowDown")
+            else if ((!gameArea.keys["ArrowDown"] && e.code === "ArrowDown") || (!gameArea.keys[" "] && e.code === " "))
             {
                 e.preventDefault()
+                if (gameArea.userIsReceiving)
+                {
+                    socket.emit("receive")
+                    gameArea.userIsReceiving = false
+                }
+                else
+                {
+                    // slap()
+                }
+                gameArea.recipientIndex = 0
+                gameArea.receiveAnimationStart = gameArea.timestamp
+                gameArea.audio.dealMany.play()
             }
             gameArea.keys[e.code] = true
         })
@@ -72,6 +86,22 @@ var gameArea = {
     },
     update: function ()
     {
+        if (this.receiveAnimationStart > -1)
+        {
+            if (this.timestamp - this.receiveAnimationStart > 40)  // in milliseconds
+            {
+                this.centerStack.pop().receive(this.recipientIndex)
+                if (this.centerStack.length == 0)
+                {
+                    this.receiveAnimationStart = -1
+                    this.recipientIndex = -1
+                }
+                else
+                {
+                    this.receiveAnimationStart = gameArea.timestamp
+                }
+            }
+        }
         for (componentName in this.components)
         {
             component = this.components[componentName]
