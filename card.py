@@ -10,3 +10,6 @@ class Card:
 
     def __str__(self):
         return RANK_NAME[self.rank] + " of " + self.suit
+
+    def get_id(self):
+        return "cards/card" + self.suit + RANK_NAME[self.rank] + ".png"

@@ -48,13 +48,15 @@ def join_lobby(socket_id, lobby_name):
         sio.emit("denied_entry", "invalid lobby name", room=socket_id)
     elif lobby_name in lobbies and len(lobbies[lobby_name]["players"]) >= MAX_PLAYERS_PER_LOBBY:
         sio.emit("denied_entry", "lobby is full (" + str(MAX_PLAYERS_PER_LOBBY) + " players)", room=socket_id)
-    # TODO deny if lobby's game has started
+    elif lobby_name in lobbies and lobbies[lobby_name]["in_progress"]:
+        sio.emit("denied_entry", "game is in progress", room=socket_id)
     else:
         sio.enter_room(socket_id, lobby_name)
         new_player = {
             "socket_id": socket_id,
             "name": socket_id[:6],  # Prompt user to enter a name (?)
             "lobby_name": lobby_name,
+            "is_host": False,
             "hand": [
                 card.Card(1, "Spades"),
                 card.Card(12, "Hearts"),
@@ -63,13 +65,15 @@ def join_lobby(socket_id, lobby_name):
         }
         if lobby_name not in lobbies:
             # The first player to join the lobby becomes the host
-            new_player["isHost"] = True
+            new_player["is_host"] = True
             lobbies[lobby_name] = {
                 "in_progress": False,
                 "name": lobby_name,
                 "host": new_player,
+                "current_dealer": new_player,
                 "players": {},
-                "settings": {}
+                "settings": {},
+                "center_pile": []
             }
             print("Lobby " + lobby_name + " created")
 
@@ -89,7 +93,7 @@ def join_lobby(socket_id, lobby_name):
 @sio.event
 def declare_settings(socket_id, settings):
     lobby_name = players[socket_id]["lobby_name"]
-    if lobbies[lobby_name]["host"] is players[socket_id]:
+    if lobbies[lobby_name]["host"] is players[socket_id] and not lobbies[lobby_name]["in_progress"]:
         lobbies[lobby_name]["settings"] = settings
         sio.emit("update_settings", settings, room=lobby_name, skip_sid=socket_id)
 
@@ -103,15 +107,19 @@ def start_game(socket_id, settings):
 
         first_player_socket_id = list(lobbies[lobby_name]["players"].keys()
                                       )[randrange(0, len(lobbies[lobby_name]["players"]))]
+        lobbies[lobby_name]["current_dealer"] = players[first_player_socket_id]
         sio.emit("prompt_deal", room=first_player_socket_id)
         sio.emit("players_turn", players[first_player_socket_id]["name"],
                  room=lobby_name, skip_sid=first_player_socket_id)  # This is already implied for the starting player
 
 
-# TODO called by player's post
-def deal(player_id):
-    # TODO deal the top card from the player's deck (if it's their turn)
-    pass
+@sio.event
+def deal(socket_id):
+    lobby_name = players[socket_id]["lobby_name"]
+    if socket_id == lobbies[lobby_name]["current_dealer"]["socket_id"]:
+        current_card = players[socket_id]["hand"].pop(0)
+        lobbies[lobby_name]["center_pile"].insert(0, current_card)
+        sio.emit("witness_deal", current_card.get_id(), room=lobby_name)
 
 
 # TODO called by player's post

@@ -4,6 +4,12 @@ var gameArea = {
     keys: {},
     audio: {},
     players: [],  // User is always at first index
+    userIsDealing: false,
+    centerCardRotations: [Math.PI / -13, 0, Math.PI / 13],
+    centerCardXOffsets: [-20, 0, 20],
+    centerCardYOffsets: [10, -10, 10],
+    nextCenterCardOffsetIndex: 0,
+    centerStackHeight: 0,
     start: function ()
     {
         socket.emit("join_lobby", window.location.href.split("/")[window.location.href.split("/").length - 1])
@@ -13,14 +19,18 @@ var gameArea = {
 
         window.addEventListener("keydown", function (e)
         {
-            if (!gameArea.keys["ArrowRight"] && e.code === "ArrowRight")
-            {
-                gameArea.components["testImage"].x += 10
-            }
-            else if (!gameArea.keys["ArrowUp"] && e.code === "ArrowUp")
+            if (!gameArea.keys["ArrowUp"] && e.code === "ArrowUp")
             {
                 e.preventDefault()
-                gameArea.components["cards/cardSpadesA.png"].deal()
+                if (userIsDealing)
+                {
+                    socket.emit("deal")
+                    userIsDealing = false
+                }
+            }
+            else if (!gameArea.keys["ArrowDown"] && e.code === "ArrowDown")
+            {
+                e.preventDefault()
             }
             gameArea.keys[e.code] = true
         })
@@ -129,6 +139,9 @@ class Card extends ImgComponent
         this.rank = rank // first letter is always capitalized
         this.suit = suit
         this.type = "Card"
+        this.targetRotation = 0
+        this.targetXOffset = 0
+        this.targetYOffset = 0
     }
     deal()
     {
@@ -138,6 +151,11 @@ class Card extends ImgComponent
             gameArea.drawList.push(this)
             this.x = (gameArea.canvas.width / 2)
             this.y = gameArea.canvas.height + this.height
+            this.targetXOffset = gameArea.centerCardXOffsets[gameArea.nextCenterCardOffsetIndex] + (15 * Math.sin((gameArea.centerStackHeight * Math.PI) / 11))
+            this.targetYOffset = gameArea.centerCardYOffsets[gameArea.nextCenterCardOffsetIndex] + (15 * Math.cos((gameArea.centerStackHeight * Math.PI) / 11))
+            this.targetRotation = gameArea.centerCardRotations[gameArea.nextCenterCardOffsetIndex]
+            gameArea.nextCenterCardOffsetIndex = (gameArea.nextCenterCardOffsetIndex + 1) % 3
+            gameArea.centerStackHeight++
             this.animating = true
             gameArea.audio.deal.play()
             this.animationStart = gameArea.timestamp
@@ -156,7 +174,9 @@ class Card extends ImgComponent
         }
         else
         {
-            clearInterval(thisCard.interval)
+            thisCard.x = (gameArea.canvas.width / 2) + thisCard.targetXOffset
+            thisCard.y = (gameArea.canvas.height / 2) + thisCard.targetYOffset
+            thisCard.rotation = thisCard.targetRotation
             thisCard.animating = false
             delete thisCard.currentAnimations.deal
             console.log("done moving!")

@@ -85,4 +85,10 @@ socket.on("players_turn", function (playerName)
 socket.on("prompt_deal", function ()
 {
     gameArea.components[gameArea.players[0]].fillStyle = "#81d4fa"
+    userIsDealing = true
+})
+
+socket.on("witness_deal", function (cardID)
+{
+    gameArea.components[cardID].deal()
 })
