@@ -26,6 +26,30 @@ def normalize(original_string):
     return "".join(re_split(r"[^0-9A-Za-z_\-]", original_string))
 
 
+def set_next_turn_index(lobby):
+    for i in range(len(lobby["player_order"])):
+        lobby["whose_turn_index"] = (lobby["whose_turn_index"] + 1) % len(lobby["player_order"])
+        if len(players[lobby["player_order"][lobby["whose_turn_index"]]]["hand"]) > 0:
+            return True  # Game continues
+    return False  # Game over
+
+
+def prompt_deal(lobby):
+    dealer_socket_id = lobby["player_order"][lobby["whose_turn_index"]]
+    lobby["current_dealer_sid"] = dealer_socket_id
+    sio.emit("prompt_deal", room=dealer_socket_id)
+    sio.emit("players_turn", players[dealer_socket_id]["name"],
+             room=lobby["name"], skip_sid=dealer_socket_id)  # This is already implied for the dealing player
+
+
+def prompt_receive(lobby):
+    recipient_socket_id = lobby["player_order"][lobby["whose_turn_index"]]
+    lobby["current_recipient_sid"] = recipient_socket_id
+    sio.emit("prompt_receive", room=recipient_socket_id)
+    sio.emit("players_turn", players[recipient_socket_id]["name"],
+             room=lobby["name"], skip_sid=recipient_socket_id)  # This is already implied for the receiving player
+
+
 @app.route("/")
 def index():
     return app.send_static_file("index.html")
@@ -70,8 +94,11 @@ def join_lobby(socket_id, lobby_name):
                 "in_progress": False,
                 "name": lobby_name,
                 "host": new_player,
-                "current_dealer": new_player,
+                "current_dealer_sid": "",
+                "current_recipient_sid": "",
                 "players": {},
+                "player_order": [],
+                "whose_turn_index": -1,
                 "settings": {},
                 "center_pile": []
             }
@@ -103,23 +130,24 @@ def start_game(socket_id, settings):
     lobby_name = players[socket_id]["lobby_name"]
     if lobbies[lobby_name]["host"] is players[socket_id]:
         declare_settings(socket_id, settings)
+        lobbies[lobby_name]["player_order"] = list(lobbies[lobby_name]["players"].keys())
         lobbies[lobby_name]["in_progress"] = True
 
-        first_player_socket_id = list(lobbies[lobby_name]["players"].keys()
-                                      )[randrange(0, len(lobbies[lobby_name]["players"]))]
-        lobbies[lobby_name]["current_dealer"] = players[first_player_socket_id]
-        sio.emit("prompt_deal", room=first_player_socket_id)
-        sio.emit("players_turn", players[first_player_socket_id]["name"],
-                 room=lobby_name, skip_sid=first_player_socket_id)  # This is already implied for the starting player
+        first_player_index = randrange(0, len(lobbies[lobby_name]["players"]))
+        lobbies[lobby_name]["whose_turn_index"] = first_player_index
+        prompt_deal(lobbies[lobby_name])
 
 
 @sio.event
 def deal(socket_id):
     lobby_name = players[socket_id]["lobby_name"]
-    if socket_id == lobbies[lobby_name]["current_dealer"]["socket_id"]:
+    if socket_id == lobbies[lobby_name]["current_dealer_sid"]:
         current_card = players[socket_id]["hand"].pop(0)
         lobbies[lobby_name]["center_pile"].insert(0, current_card)
         sio.emit("witness_deal", current_card.get_id(), room=lobby_name)
+    # TODO determine current_dealer / current_recipient
+    set_next_turn_index(lobbies[lobby_name])  # TODO handle the return value of this function call
+    prompt_deal(lobbies[lobby_name])  # TODO temporary
 
 
 # TODO called by player's post

@@ -3,7 +3,9 @@ var gameArea = {
     drawList: [],  // Components in this array are drawn to the canvas in the order they appear (e.g. last index == drawn on top of everything else)
     keys: {},
     audio: {},
-    players: [],  // User is always at first index
+    players: {},  // User is always at first index
+    user: null,
+    numPlayers: 0,
     userIsDealing: false,
     centerCardRotations: [Math.PI / -13, 0, Math.PI / 13],
     centerCardXOffsets: [-20, 0, 20],
@@ -22,10 +24,10 @@ var gameArea = {
             if (!gameArea.keys["ArrowUp"] && e.code === "ArrowUp")
             {
                 e.preventDefault()
-                if (userIsDealing)
+                if (gameArea.userIsDealing)
                 {
                     socket.emit("deal")
-                    userIsDealing = false
+                    gameArea.userIsDealing = false
                 }
             }
             else if (!gameArea.keys["ArrowDown"] && e.code === "ArrowDown")
@@ -235,6 +237,55 @@ class TextComponent
             gameArea.drawList.splice(INDEX_OF, 1)
         }
     }
+}
+
+class Player
+{
+    constructor(name)
+    {
+        this.name = name
+        this.component = new TextComponent("player_" + name, name, 0, 0, 0, "20px Arial, Helvetica, sans-serif", "#eee")
+        this.__isOut = false
+
+        gameArea.players[name] = this
+        if (gameArea.user === null)
+        {
+            gameArea.user = this
+        }
+        gameArea.numPlayers++
+    }
+    get componentName()
+    {
+        return "player_" + this.name
+    }
+    get normalColor()
+    {
+        if (this.__isOut)
+        {
+            return "#999"
+        }
+        else
+        {
+            return "#eee"
+        }
+    }
+    set isTurn(isTurn_)
+    {
+        if (isTurn_)
+        {
+            this.component.fillStyle = "#81d4fa"
+        }
+        else
+        {
+            this.component.fillStyle = this.normalColor
+        }
+    }
+    set isOut(isOut_)
+    {
+        this.__isOut = isOut_
+        this.component.fillStyle = this.normalColor
+    }
+    
 }
 
 function updateGameArea()

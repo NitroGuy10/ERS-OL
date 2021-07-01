@@ -13,7 +13,7 @@ socket.on("denied_entry", function (reason)
 
 socket.on("admit_players", function (playerNames)
 {
-    if (gameArea.players.length == 0)
+    if (gameArea.numPlayers == 0)
     {
         gameArea.components["statusText"].hide()
     }
@@ -23,15 +23,14 @@ socket.on("admit_players", function (playerNames)
     }
     for (let playerName of playerNames.split(","))
     {
-        gameArea.players.push(playerName)
+        gameArea.drawList.push((new Player(playerName)).component)
 
-        gameArea.drawList.push(new TextComponent("player_" + playerName, playerName, 0, 0, 0, "20px Arial, Comic Sans MS, sans-serif", "#eee"))
-
-        for (let i = 0; i < gameArea.players.length; i++)
+        let players = Object.values(gameArea.players)
+        for (let i = 0; i < gameArea.numPlayers; i++)
         {
-            let theta = (i * 2 * Math.PI / gameArea.players.length) + (Math.PI / 2)
-            gameArea.components["player_" + gameArea.players[i]].x = 200 * Math.cos(theta) + gameArea.canvas.width / 2
-            gameArea.components["player_" + gameArea.players[i]].y = 200 * Math.sin(theta) + gameArea.canvas.height / 2
+            let theta = (i * 2 * Math.PI / gameArea.numPlayers) + (Math.PI / 2)
+            players[i].component.x = 200 * Math.cos(theta) + gameArea.canvas.width / 2
+            players[i].component.y = 200 * Math.sin(theta) + gameArea.canvas.height / 2
         }
     }
 })
@@ -79,15 +78,24 @@ function startGame ()
 
 socket.on("players_turn", function (playerName)
 {
-    gameArea.components["player_" + playerName].fillStyle = "#81d4fa"
+    makeTurn(playerName)
 })
+
+function makeTurn (playerName)
+{
+    for (let player in gameArea.players)
+    {
+        gameArea.players[player].isTurn = false
+    }
+    gameArea.players[playerName].isTurn = true
+}
 
 socket.on("prompt_deal", function ()
 {
-    gameArea.components["player_" + gameArea.players[0]].fillStyle = "#81d4fa"
+    makeTurn(gameArea.user.name)
     gameArea.components["promptArrow"].rotation = Math.PI
     gameArea.drawList.push(gameArea.components["promptArrow"])
-    userIsDealing = true
+    gameArea.userIsDealing = true
 })
 
 socket.on("witness_deal", function (cardID)
