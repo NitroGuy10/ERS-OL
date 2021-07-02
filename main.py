@@ -43,6 +43,41 @@ def deal_shuffled_deck(lobby):
                 player["hand"].append(deck.pop())
 
 
+def slap_results(pile, settings):
+    if settings["slapDoubles"] and len(pile) >= 2 and pile[0].rank == pile[1].rank:
+        return True, "Double"
+    elif settings["slapSandwiches"] and len(pile) >= 3 and pile[0].rank == pile[2].rank:
+        return True, "Sandwich"
+    elif settings["slapTenSandwiches"] and len(pile) >= 3 and pile[0].rank + pile[2].rank == 10:
+        return True, "Ten Sandwich"
+    elif settings["slapTopBottom"] and len(pile) >= 4 and pile[0].rank == pile[-1].rank:
+        return True, "Top Bottom"
+    elif settings["slapAddsToTen"] and len(pile) >= 2 and pile[0].rank + pile[1].rank == 10:
+        return True, "Adds to Ten"
+    elif settings["slapMarriage"] and len(pile) >= 2 and pile[0].rank + pile[1].rank == 25:
+        return True, "Marriage"
+    elif settings["slapDivorce"] and len(pile) >= 3 and pile[0].rank + pile[2].rank == 25:
+        return True, "Divorce"
+    elif settings["slapThreeAscDesc"] and len(pile) >= 3 and pile[0].rank - pile[1].rank == 1 \
+            and pile[1].rank - pile[2].rank == 1:
+        return True, "Three Ascending"
+    elif settings["slapThreeAscDesc"] and len(pile) >= 3 and pile[2].rank - pile[1].rank == 1 \
+            and pile[1].rank - pile[0].rank == 1:
+        return True, "Three Descending"
+    elif settings["slapFourAscDesc"] and len(pile) >= 4 and pile[0].rank - pile[1].rank == 1 \
+            and pile[1].rank - pile[2].rank == 1 and pile[2].rank - pile[3].rank == 1:
+        return True, "Four Ascending"
+    elif settings["slapFourAscDesc"] and len(pile) >= 4 and pile[3].rank - pile[2].rank == 1 \
+            and pile[2].rank - pile[1].rank == 1 and pile[1].rank - pile[0].rank == 1:
+        return True, "Four Descending"
+    elif settings["slapTens"] and len(pile) >= 1 and pile[0].rank == 10:
+        return True, "Ten"
+    elif settings["slapSevens"] and len(pile) >= 1 and pile[0].rank == 7:
+        return True, "Seven"
+    else:
+        return False, ""
+
+
 def prompt_deal(lobby):
     dealer_socket_id = lobby["player_order"][lobby["whose_turn_index"]]
     lobby["current_dealer_sid"] = dealer_socket_id
@@ -116,7 +151,9 @@ def join_lobby(socket_id, lobby_name):
                 "player_order": [],
                 "whose_turn_index": -1,
                 "settings": {},
-                "center_pile": []
+                "center_pile": [],
+                "can_slap": False,
+                "already_slapped": False
             }
             print("Lobby " + lobby_name + " created")
 
@@ -161,6 +198,8 @@ def deal(socket_id):
     if socket_id == lobby["current_dealer_sid"]:
         dealt_card = players[socket_id]["hand"].pop(0)
         lobby["center_pile"].insert(0, dealt_card)
+        lobby["can_slap"] = True
+        lobby["already_slapped"] = False
         sio.emit("witness_deal",
                  {"cardID": dealt_card.get_id(), "dealerName": players[socket_id]["name"]}, room=lobby["name"])
 
@@ -169,6 +208,10 @@ def deal(socket_id):
             lobby["face_card_initiator_index"] = lobby["whose_turn_index"]
             prompt_next_deal(lobby)
         elif lobby["face_card_attempts_left"] == -1:  # The game continues normally
+            prompt_next_deal(lobby)
+        elif lobby["settings"]["tenEndsFaceCardRound"] and dealt_card.rank == 10:
+            # The face card round is ended by a "10" card (if allowed in settings)
+            lobby["face_card_attempts_left"] = -1
             prompt_next_deal(lobby)
         elif lobby["face_card_attempts_left"] == 0:  # The face card round initiator receives their cards
             lobby["whose_turn_index"] = lobby["face_card_initiator_index"]
@@ -193,10 +236,24 @@ def receive(socket_id):
         prompt_deal(lobby)
 
 
-# TODO called by player's post
-def slap(player_id):
-    # TODO slap the deck and do all that that implies
-    pass
+@sio.event
+def slap(socket_id):
+    lobby = lobbies[players[socket_id]["lobby_name"]]
+    if lobby["can_slap"]:
+        if lobby["already_slapped"]:
+            sio.emit("witness_futile_slap", lobby["players"][socket_id]["name"], room=lobby["name"])
+        else:
+            sio.emit("witness_slap", lobby["players"][socket_id]["name"], room=lobby["name"])
+            results = slap_results(lobby["center_pile"], lobby["settings"])
+            if results[0]:
+                lobby["already_slapped"] = True
+                lobby["current_dealer_sid"] = ""
+                lobby["whose_turn_index"] = lobby["player_order"].index(socket_id)
+                sio.emit("explain_slap", results[1], room=lobby["name"])
+                prompt_receive(lobby)
+            else:
+                # TODO All players who slap burn a card automatically, wait 2 seconds before next prompt deal/receive
+                pass
 
 
 @sio.event

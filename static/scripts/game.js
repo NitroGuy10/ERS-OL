@@ -8,6 +8,7 @@ var gameArea = {
     numPlayers: 0,
     userIsDealing: false,
     userIsReceiving: false,
+    userCanSlap: false,
     receiveAnimationStart: -1,
     recipientIndex: -1,
     centerCardRotations: [Math.PI / -13, 0, Math.PI / 13],
@@ -33,7 +34,7 @@ var gameArea = {
                     gameArea.userIsDealing = false
                 }
             }
-            else if ((!gameArea.keys["ArrowDown"] && e.code === "ArrowDown") || (!gameArea.keys[" "] && e.code === " "))
+            else if ((!gameArea.keys["ArrowDown"] && e.code === "ArrowDown") || (!gameArea.keys["Space"] && e.code === "Space"))
             {
                 e.preventDefault()
                 if (gameArea.userIsReceiving)
@@ -41,9 +42,10 @@ var gameArea = {
                     socket.emit("receive")
                     gameArea.userIsReceiving = false
                 }
-                else
+                else if (gameArea.userCanSlap)
                 {
-                    // slap()
+                    socket.emit("slap")
+                    gameArea.userCanSlap = false
                 }
             }
             gameArea.keys[e.code] = true
@@ -121,12 +123,15 @@ var gameArea = {
 
 class Player
 {
-    constructor(name)
+    constructor(name, index)
     {
         this.name = name
+        this.index = index
         this.component = new TextComponent("player_" + name, name, 0, 0, 0, "20px Arial, Helvetica, sans-serif", "#eee")
         this.__isTurn = false
         this.__isOut = false
+
+        this.slapper = new Slapper("slapper_" + name, index)
 
         gameArea.players[name] = this
         if (gameArea.user === null)
@@ -215,5 +220,4 @@ function init()
     }
     new ImgComponent("promptArrow", document.getElementById("promptArrow"), gameArea.canvas.width * (5 / 6), gameArea.canvas.height * (5 / 6), 100, 100, 0)
     gameArea.drawList.push(new TextComponent("statusText", "Connecting...", gameArea.canvas.width / 2, gameArea.canvas.height / 2, 0, "40px Arial, Comic Sans MS, sans-serif", "#eee"))
-    new Slapper("1234")
 }

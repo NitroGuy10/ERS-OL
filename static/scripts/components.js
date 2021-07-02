@@ -64,7 +64,7 @@ class Card extends ImgComponent
         this.originX = 0
         this.originY = 0
     }
-    deal(dealerIndex)
+    deal(dealerIndex, isBurn)
     {
         if (!this.animating)
         {
@@ -98,6 +98,9 @@ class Card extends ImgComponent
             gameArea.nextCenterCardOffsetIndex = (gameArea.nextCenterCardOffsetIndex + 1) % 3
             gameArea.centerStackHeight++
             this.animating = true
+
+            // IF IS BURN: wait 1 second then push to bottom of drawlist and centerstack and play burn sound
+
             gameArea.audio.deal.play()
             this.animationStart = gameArea.timestamp
             this.currentAnimations.deal = this.dealMovement
@@ -158,21 +161,22 @@ class Slapper extends ImgComponent
     static SLAP_ANIMATION_LENGTH = 120  // in milliseconds
     static VANISH_ANIMATION_LENGTH = 500  // in milliseconds
 
-    constructor(playerName)
+    constructor(name, slapperIndex)
     {
-        super(["slapper_", playerName].join(""), document.getElementById("slapper"), gameArea.canvas.width / 2, gameArea.canvas.height / 2, 72, 80, 0)
+        super(name, document.getElementById("slapper"), gameArea.canvas.width / 2, gameArea.canvas.height / 2, 72, 80, 0)
+        this.slapperIndex = slapperIndex
 
         this.type = "Slapper"
         this.scale = 1.0
         this.alpha = 1.0
     }
-    slap(slapperIndex)
+    slap()
     {
         if (!this.animating)
         {
             this.hide()
 
-            this.rotation = (slapperIndex * 2 * Math.PI / gameArea.numPlayers)
+            this.rotation = (this.slapperIndex * 2 * Math.PI / gameArea.numPlayers)
 
             gameArea.drawList.push(this)
             this.x = gameArea.canvas.width / 2
