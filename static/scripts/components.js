@@ -108,9 +108,9 @@ class Card extends ImgComponent
         const ELAPSED = gameArea.timestamp - thisCard.animationStart
         if (ELAPSED <= Card.DEAL_ANIMATION_LENGTH)
         {
-            thisCard.x = ((gameArea.canvas.width  / 2) + thisCard.targetXOffset) + (thisCard.originX * Math.sin(ELAPSED * -0.5 * Math.PI / Card.DEAL_ANIMATION_LENGTH) + thisCard.originX)
+            thisCard.x = ((gameArea.canvas.width / 2) + thisCard.targetXOffset) + (thisCard.originX * Math.sin(ELAPSED * -0.5 * Math.PI / Card.DEAL_ANIMATION_LENGTH) + thisCard.originX)
             thisCard.y = ((gameArea.canvas.height / 2) + thisCard.targetYOffset) + (thisCard.originY * Math.sin(ELAPSED * -0.5 * Math.PI / Card.DEAL_ANIMATION_LENGTH) + thisCard.originY)
-            thisCard.rotation = ((Math.PI / 2) - thisCard.targetRotation)  * Math.sin(ELAPSED / (Card.DEAL_ANIMATION_LENGTH / (-0.5 * Math.PI))) + (Math.PI / 2)
+            thisCard.rotation = ((Math.PI / 2) - thisCard.targetRotation) * Math.sin(ELAPSED / (Card.DEAL_ANIMATION_LENGTH / (-0.5 * Math.PI))) + (Math.PI / 2)
         }
         else
         {
@@ -139,9 +139,9 @@ class Card extends ImgComponent
         const TIME_LEFT = Card.RECEIVE_ANIMATION_LENGTH + (thisCard.animationStart - gameArea.timestamp)
         if (TIME_LEFT >= -Card.RECEIVE_ANIMATION_LENGTH)
         {
-            thisCard.x = ((gameArea.canvas.width  / 2) + thisCard.targetXOffset) + (thisCard.originX * Math.sin(TIME_LEFT * -0.5 * Math.PI / Card.RECEIVE_ANIMATION_LENGTH) + thisCard.originX)
+            thisCard.x = ((gameArea.canvas.width / 2) + thisCard.targetXOffset) + (thisCard.originX * Math.sin(TIME_LEFT * -0.5 * Math.PI / Card.RECEIVE_ANIMATION_LENGTH) + thisCard.originX)
             thisCard.y = ((gameArea.canvas.height / 2) + thisCard.targetYOffset) + (thisCard.originY * Math.sin(TIME_LEFT * -0.5 * Math.PI / Card.RECEIVE_ANIMATION_LENGTH) + thisCard.originY)
-            thisCard.rotation = ((Math.PI / 2) - thisCard.targetRotation)  * Math.sin(TIME_LEFT / (Card.RECEIVE_ANIMATION_LENGTH / (-0.5 * Math.PI))) + (Math.PI / 2)
+            thisCard.rotation = ((Math.PI / 2) - thisCard.targetRotation) * Math.sin(TIME_LEFT / (Card.RECEIVE_ANIMATION_LENGTH / (-0.5 * Math.PI))) + (Math.PI / 2)
         }
         else
         {
@@ -150,7 +150,82 @@ class Card extends ImgComponent
             delete thisCard.currentAnimations.receive
         }
     }
-    
+
+}
+
+class Slapper extends ImgComponent
+{
+    static SLAP_ANIMATION_LENGTH = 120  // in milliseconds
+    static VANISH_ANIMATION_LENGTH = 500  // in milliseconds
+
+    constructor(playerName)
+    {
+        super(["slapper_", playerName].join(""), document.getElementById("slapper"), gameArea.canvas.width / 2, gameArea.canvas.height / 2, 72, 80, 0)
+
+        this.type = "Slapper"
+        this.scale = 1.0
+        this.alpha = 1.0
+    }
+    slap(slapperIndex)
+    {
+        if (!this.animating)
+        {
+            this.hide()
+
+            this.rotation = (slapperIndex * 2 * Math.PI / gameArea.numPlayers)
+
+            gameArea.drawList.push(this)
+            this.x = gameArea.canvas.width / 2
+            this.y = gameArea.canvas.height / 2
+            this.scale = 2.5
+            this.animating = true
+            gameArea.audio.slap.play()
+            this.animationStart = gameArea.timestamp
+            this.currentAnimations.slap = this.slapMovement
+        }
+    }
+    slapMovement(thisSlapper)
+    {
+        const ELAPSED = gameArea.timestamp - thisSlapper.animationStart
+        if (ELAPSED <= Slapper.SLAP_ANIMATION_LENGTH)
+        {
+            thisSlapper.scale = 4 - (1.4 * Math.sin(ELAPSED * 0.5 * Math.PI / Slapper.SLAP_ANIMATION_LENGTH) + 1.4)
+        }
+        else
+        {
+            thisSlapper.scale = 1
+            delete thisSlapper.currentAnimations.slap
+
+            thisSlapper.animationStart = gameArea.timestamp
+            thisSlapper.currentAnimations.vanish = thisSlapper.vanishMovement
+        }
+    }
+    vanishMovement(thisSlapper)
+    {
+        const ELAPSED = gameArea.timestamp - thisSlapper.animationStart
+        if (ELAPSED <= Slapper.VANISH_ANIMATION_LENGTH)
+        {
+            thisSlapper.alpha = 1 - (ELAPSED / Slapper.VANISH_ANIMATION_LENGTH)
+        }
+        else
+        {
+            thisSlapper.hide()
+            thisSlapper.alpha = 1.0
+            thisSlapper.animating = false
+            delete thisSlapper.currentAnimations.vanish
+        }
+    }
+    draw()
+    {
+        // x and y are the center of the image
+        gameArea.context.save()
+        gameArea.context.translate(this.x, this.y)
+        gameArea.context.rotate(this.rotation)
+        gameArea.context.scale(this.scale, this.scale)
+        gameArea.context.globalAlpha = this.alpha
+        gameArea.context.drawImage(this.image, this.width / -2, this.height / -2)
+        gameArea.context.restore()
+    }
 }
 
 class TextComponent

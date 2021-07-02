@@ -215,4 +215,5 @@ function init()
     }
     new ImgComponent("promptArrow", document.getElementById("promptArrow"), gameArea.canvas.width * (5 / 6), gameArea.canvas.height * (5 / 6), 100, 100, 0)
     gameArea.drawList.push(new TextComponent("statusText", "Connecting...", gameArea.canvas.width / 2, gameArea.canvas.height / 2, 0, "40px Arial, Comic Sans MS, sans-serif", "#eee"))
+    new Slapper("1234")
 }
