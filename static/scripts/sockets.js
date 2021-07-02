@@ -108,7 +108,7 @@ socket.on("prompt_deal", function ()
 socket.on("witness_deal", function (info)
 {
     gameArea.components["statusText"].hide()
-    gameArea.components[info.cardID].deal(gameArea.players[info.dealerName].index, false)
+    gameArea.components[info.cardID].deal(gameArea.players[info.dealerName].index)
     gameArea.userCanSlap = true
 })
 
@@ -139,6 +139,13 @@ socket.on("witness_receive", function (recipientName)
 socket.on("witness_futile_slap", function (slapperName)
 {
     gameArea.players[slapperName].slapper.slap()
+})
+
+socket.on("witness_burn_slap", function (info)
+{
+    gameArea.components["promptArrow"].hide()
+    gameArea.components[info.cardID].setBurn(gameArea.players[info.burnerName].index, gameArea.userIsDealing, gameArea.userIsReceiving)
+    gameArea.players[info.burnerName].slapper.burnSlap(gameArea.components[info.cardID])
 })
 
 socket.on("witness_slap", function (slapperName)

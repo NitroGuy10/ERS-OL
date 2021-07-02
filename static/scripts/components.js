@@ -63,8 +63,10 @@ class Card extends ImgComponent
         // For origin values, (0, 0) refers to the center of the canvas
         this.originX = 0
         this.originY = 0
+
+        this.burnInfo = null
     }
-    deal(dealerIndex, isBurn)
+    deal(dealerIndex)
     {
         if (!this.animating)
         {
@@ -84,26 +86,43 @@ class Card extends ImgComponent
             this.hide()
             gameArea.components["promptArrow"].hide()
 
+            if (this.burnInfo == null)
+            {
+                gameArea.audio.deal.play()
+                gameArea.drawList.push(this)
+                gameArea.centerStack.push(this)
+                gameArea.nextCenterCardOffsetIndex = (gameArea.nextCenterCardOffsetIndex + 1) % 3
+            }
+            else
+            {
+                dealerIndex = this.burnInfo.burnerIndex
+                gameArea.audio.burn.play()    
+
+                gameArea.drawList.reverse()
+                gameArea.drawList.push(this)
+                gameArea.drawList.reverse()
+
+                gameArea.centerStack.reverse()
+                gameArea.centerStack.push(this)
+                gameArea.centerStack.reverse()
+            }
+
             let theta = (dealerIndex * 2 * Math.PI / gameArea.numPlayers) + (Math.PI / 2)
             this.originX = (gameArea.canvas.width / 2) * Math.cos(theta)
             this.originY = (gameArea.canvas.height / 2) * Math.sin(theta)
-
-            gameArea.drawList.push(this)
-            gameArea.centerStack.push(this)
+            
             this.targetXOffset = gameArea.centerCardXOffsets[gameArea.nextCenterCardOffsetIndex] + (15 * Math.sin((gameArea.centerStack.length * Math.PI) / 11))
             this.targetYOffset = gameArea.centerCardYOffsets[gameArea.nextCenterCardOffsetIndex] + (15 * Math.cos((gameArea.centerStack.length * Math.PI) / 11))
             this.x = this.originX
             this.y = this.originY
             this.targetRotation = gameArea.centerCardRotations[gameArea.nextCenterCardOffsetIndex]
-            gameArea.nextCenterCardOffsetIndex = (gameArea.nextCenterCardOffsetIndex + 1) % 3
             gameArea.centerStackHeight++
             this.animating = true
 
-            // IF IS BURN: wait 1 second then push to bottom of drawlist and centerstack and play burn sound
-
-            gameArea.audio.deal.play()
             this.animationStart = gameArea.timestamp
             this.currentAnimations.deal = this.dealMovement
+
+            console.log(this)
         }
     }
     dealMovement(thisCard)
@@ -122,6 +141,23 @@ class Card extends ImgComponent
             thisCard.rotation = thisCard.targetRotation
             thisCard.animating = false
             delete thisCard.currentAnimations.deal
+
+            if (thisCard.burnInfo != null)
+            {
+                gameArea.userIsDealing = thisCard.burnInfo.userIsDealing
+                gameArea.userIsReceiving = thisCard.burnInfo.userIsReceiving
+                if (thisCard.burnInfo.userIsDealing)
+                {
+                    gameArea.components["promptArrow"].rotation = Math.PI
+                    gameArea.drawList.push(gameArea.components["promptArrow"])
+                }
+                else if (thisCard.burnInfo.userIsReceiving)
+                {
+                    gameArea.components["promptArrow"].rotation = 0
+                    gameArea.drawList.push(gameArea.components["promptArrow"])
+                }
+                thisCard.burnInfo = null
+            }
         }
     }
     receive(recipientIndex)
@@ -153,6 +189,14 @@ class Card extends ImgComponent
             delete thisCard.currentAnimations.receive
         }
     }
+    setBurn(burnerIndex, userIsDealing, userIsReceiving)
+    {
+        this.burnInfo = {
+            burnerIndex: burnerIndex,
+            userIsDealing: userIsDealing,
+            userIsReceiving: userIsReceiving
+        }
+    }
 
 }
 
@@ -165,6 +209,7 @@ class Slapper extends ImgComponent
     {
         super(name, document.getElementById("slapper"), gameArea.canvas.width / 2, gameArea.canvas.height / 2, 72, 80, 0)
         this.slapperIndex = slapperIndex
+        this.cardToBurn = null
 
         this.type = "Slapper"
         this.scale = 1.0
@@ -188,6 +233,11 @@ class Slapper extends ImgComponent
             this.currentAnimations.slap = this.slapMovement
         }
     }
+    burnSlap (cardToBurn)
+    {
+        this.cardToBurn = cardToBurn
+        this.slap()
+    }
     slapMovement(thisSlapper)
     {
         const ELAPSED = gameArea.timestamp - thisSlapper.animationStart
@@ -202,6 +252,12 @@ class Slapper extends ImgComponent
 
             thisSlapper.animationStart = gameArea.timestamp
             thisSlapper.currentAnimations.vanish = thisSlapper.vanishMovement
+
+            if (thisSlapper.cardToBurn != null)
+            {
+                thisSlapper.cardToBurn.deal()
+                thisSlapper.cardToBurn = null
+            }
         }
     }
     vanishMovement(thisSlapper)

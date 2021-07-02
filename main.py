@@ -252,8 +252,14 @@ def slap(socket_id):
                 sio.emit("explain_slap", results[1], room=lobby["name"])
                 prompt_receive(lobby)
             else:
-                # TODO All players who slap burn a card automatically, wait 2 seconds before next prompt deal/receive
-                pass
+                burnt_card = players[socket_id]["hand"].pop(0)
+                lobby["center_pile"].append(burnt_card)
+                sio.emit("witness_burn_slap",
+                         {"burnerName": lobby["players"][socket_id]["name"],
+                          "cardID": burnt_card.get_id()},
+                         room=lobby["name"])
+                if socket_id == lobby["current_dealer_sid"] and len(players[socket_id]["hand"]):
+                    prompt_next_deal(lobby)
 
 
 @sio.event
