@@ -25,3 +25,13 @@ class Card:
             return 3
         else:
             return -1
+
+
+def deck():
+    new_deck = []
+    for rank in range(1, 14):
+        new_deck.append(Card(rank, "Clubs"))
+        new_deck.append(Card(rank, "Hearts"))
+        new_deck.append(Card(rank, "Spades"))
+        new_deck.append(Card(rank, "Diamonds"))
+    return new_deck

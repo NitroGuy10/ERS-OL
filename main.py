@@ -5,7 +5,7 @@ from socketio import Server as SocketIOServer, WSGIApp as SocketIOWSGIApp
 
 from markupsafe import escape
 from re import split as re_split
-from random import randrange
+from random import randrange, shuffle
 
 import render
 import card
@@ -32,6 +32,15 @@ def set_next_turn_index(lobby):
         if len(players[lobby["player_order"][lobby["whose_turn_index"]]]["hand"]) > 0:
             return True  # Game continues
     return False  # Game over
+
+
+def deal_shuffled_deck(lobby):
+    deck = card.deck()
+    shuffle(deck)
+    while len(deck) != 0:
+        for player in lobby["players"].values():
+            if len(deck) != 0:
+                player["hand"].append(deck.pop())
 
 
 def prompt_deal(lobby):
@@ -89,11 +98,7 @@ def join_lobby(socket_id, lobby_name):
             "lobby_name": lobby_name,
             "is_host": False,
             "hand": [
-                card.Card(1, "Spades"),
-                card.Card(12, "Hearts"),
-                card.Card(9, "Clubs"),
-                card.Card(2, "Diamonds"),
-                card.Card(8, "Diamonds"),
+                # card.Card(1, "Spades")
             ]
         }
         if lobby_name not in lobbies:
@@ -143,6 +148,7 @@ def start_game(socket_id, settings):
         declare_settings(socket_id, settings)
         lobby["player_order"] = list(lobby["players"].keys())
         lobby["in_progress"] = True
+        deal_shuffled_deck(lobby)
 
         first_player_index = randrange(0, len(lobby["players"]))
         lobby["whose_turn_index"] = first_player_index

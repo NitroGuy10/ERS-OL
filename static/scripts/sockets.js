@@ -29,7 +29,7 @@ socket.on("admit_players", function (playerNames)
         for (let i = 0; i < gameArea.numPlayers; i++)
         {
             let theta = (i * 2 * Math.PI / gameArea.numPlayers) + (Math.PI / 2)
-            players[i].component.x = (.4 * gameArea.canvas.width ) * Math.cos(theta) + gameArea.canvas.width / 2
+            players[i].component.x = (.4 * gameArea.canvas.width) * Math.cos(theta) + gameArea.canvas.width / 2
             players[i].component.y = (.4 * gameArea.canvas.height) * Math.sin(theta) + gameArea.canvas.height / 2
         }
     }
@@ -93,9 +93,12 @@ function makeTurn(playerName)
 socket.on("prompt_deal", function ()
 {
     makeTurn(gameArea.user.name)
-    gameArea.components["promptArrow"].rotation = Math.PI
-    gameArea.drawList.push(gameArea.components["promptArrow"])
-    gameArea.userIsDealing = true
+    if (gameArea.receiveAnimationStart == -1)
+    {
+        gameArea.components["promptArrow"].rotation = Math.PI
+        gameArea.drawList.push(gameArea.components["promptArrow"])
+        gameArea.userIsDealing = true
+    }
 })
 
 socket.on("witness_deal", function (info)
@@ -119,6 +122,7 @@ socket.on("prompt_receive", function ()
 
 socket.on("witness_receive", function (recipientName)
 {
+    gameArea.components["promptArrow"].hide()
     gameArea.recipientIndex = Object.keys(gameArea.players).indexOf(recipientName)
     gameArea.receiveAnimationStart = gameArea.timestamp
     gameArea.audio.dealMany.play()

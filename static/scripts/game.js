@@ -38,7 +38,6 @@ var gameArea = {
                 e.preventDefault()
                 if (gameArea.userIsReceiving)
                 {
-                    gameArea.components["promptArrow"].hide()
                     socket.emit("receive")
                     gameArea.userIsReceiving = false
                 }
@@ -93,6 +92,13 @@ var gameArea = {
                 {
                     this.receiveAnimationStart = -1
                     this.recipientIndex = -1
+
+                    if (gameArea.user.isTurn)
+                    {
+                        gameArea.components["promptArrow"].rotation = Math.PI
+                        gameArea.drawList.push(gameArea.components["promptArrow"])
+                        gameArea.userIsDealing = true
+                    }
                 }
                 else
                 {
@@ -119,6 +125,7 @@ class Player
     {
         this.name = name
         this.component = new TextComponent("player_" + name, name, 0, 0, 0, "20px Arial, Helvetica, sans-serif", "#eee")
+        this.__isTurn = false
         this.__isOut = false
 
         gameArea.players[name] = this
@@ -143,8 +150,13 @@ class Player
             return "#eee"
         }
     }
+    get isTurn()
+    {
+        return this.__isTurn
+    }
     set isTurn(isTurn_)
     {
+        this.__isTurn = isTurn_
         if (isTurn_)
         {
             this.component.fillStyle = "#81d4fa"
@@ -153,6 +165,10 @@ class Player
         {
             this.component.fillStyle = this.normalColor
         }
+    }
+    get isOut()
+    {
+        return this.__isOut
     }
     set isOut(isOut_)
     {

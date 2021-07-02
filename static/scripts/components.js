@@ -68,6 +68,19 @@ class Card extends ImgComponent
     {
         if (!this.animating)
         {
+            if (gameArea.receiveAnimationStart != -1 || gameArea.centerStack.length == 0)
+            {
+                gameArea.receiveAnimationStart = -1
+                for (let componentName in gameArea.components)
+                {
+                    if (gameArea.components[componentName].type === "Card")
+                    {
+                        gameArea.components[componentName].hide()
+                    }
+                }
+                gameArea.centerStack = []
+            }
+
             this.hide()
             gameArea.components["promptArrow"].hide()
 
