@@ -98,13 +98,9 @@ class Card extends ImgComponent
                 dealerIndex = this.burnInfo.burnerIndex
                 gameArea.audio.burn.play()    
 
-                gameArea.drawList.reverse()
-                gameArea.drawList.push(this)
-                gameArea.drawList.reverse()
+                gameArea.drawBottomQueue.push(this)
 
-                gameArea.centerStack.reverse()
-                gameArea.centerStack.push(this)
-                gameArea.centerStack.reverse()
+                gameArea.centerStack.unshift(this)
             }
 
             let theta = (dealerIndex * 2 * Math.PI / gameArea.numPlayers) + (Math.PI / 2)
@@ -115,14 +111,13 @@ class Card extends ImgComponent
             this.targetYOffset = gameArea.centerCardYOffsets[gameArea.nextCenterCardOffsetIndex] + (15 * Math.cos((gameArea.centerStack.length * Math.PI) / 11))
             this.x = this.originX
             this.y = this.originY
+            this.rotation = Math.PI / 2
             this.targetRotation = gameArea.centerCardRotations[gameArea.nextCenterCardOffsetIndex]
             gameArea.centerStackHeight++
             this.animating = true
 
             this.animationStart = gameArea.timestamp
             this.currentAnimations.deal = this.dealMovement
-
-            console.log(this)
         }
     }
     dealMovement(thisCard)

@@ -1,6 +1,7 @@
 var gameArea = {
     components: {},
     drawList: [],  // Components in this array are drawn to the canvas in the order they appear (e.g. last index == drawn on top of everything else)
+    drawBottomQueue: [],
     keys: {},
     audio: {},
     players: {},  // User is always at first index
@@ -116,6 +117,10 @@ var gameArea = {
         for (component of this.drawList)
         {
             component.draw()
+        }
+        for (component of this.drawBottomQueue)
+        {
+            this.drawList.unshift(component)
         }
     }
 

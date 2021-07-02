@@ -258,7 +258,7 @@ def slap(socket_id):
                          {"burnerName": lobby["players"][socket_id]["name"],
                           "cardID": burnt_card.get_id()},
                          room=lobby["name"])
-                if socket_id == lobby["current_dealer_sid"] and len(players[socket_id]["hand"]):
+                if socket_id == lobby["current_dealer_sid"] and len(players[socket_id]["hand"]) == 0:
                     prompt_next_deal(lobby)
 
 
