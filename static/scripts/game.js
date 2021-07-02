@@ -122,6 +122,7 @@ var gameArea = {
         {
             this.drawList.unshift(component)
         }
+        drawBottomQueue = []
     }
 
 }
