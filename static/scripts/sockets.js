@@ -110,6 +110,7 @@ socket.on("witness_deal", function (info)
     console.log("witness deal")
     gameArea.components["statusText"].hide()
     gameArea.components[info.cardID].deal(gameArea.players[info.dealerName].index)
+    gameArea.components["promptArrow"].hide()
     gameArea.userCanSlap = true
 })
 

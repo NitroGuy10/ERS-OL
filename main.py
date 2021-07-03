@@ -78,6 +78,11 @@ def slap_results(pile, settings):
         return False, ""
 
 
+def clear_burn_slaps(lobby):
+    for player in lobby["players"]:
+        players[player]["has_burn_slapped"] = False
+
+
 def prompt_deal(lobby):
     dealer_socket_id = lobby["player_order"][lobby["whose_turn_index"]]
     if len(players[dealer_socket_id]["hand"]) == 0:
@@ -141,7 +146,8 @@ def join_lobby(socket_id, lobby_name):
             "is_host": False,
             "hand": [
                 # card.Card(1, "Spades")
-            ]
+            ],
+            "has_burn_slapped": False
         }
         if lobby_name not in lobbies:
             # The first player to join the lobby becomes the host
@@ -207,6 +213,7 @@ def deal(socket_id):
         lobby["center_pile"].insert(0, dealt_card)
         lobby["can_slap"] = True
         lobby["already_slapped"] = False
+        clear_burn_slaps(lobby)
         sio.emit("witness_deal",
                  {"cardID": dealt_card.get_id(), "dealerName": players[socket_id]["name"]}, room=lobby["name"])
 
@@ -251,17 +258,18 @@ def slap(socket_id):
         if lobby["already_slapped"]:
             sio.emit("witness_futile_slap", lobby["players"][socket_id]["name"], room=lobby["name"])
         else:
-            sio.emit("witness_slap", lobby["players"][socket_id]["name"], room=lobby["name"])
             results = slap_results(lobby["center_pile"], lobby["settings"])
             if results[0]:
                 lobby["already_slapped"] = True
                 lobby["current_dealer_sid"] = ""
                 lobby["whose_turn_index"] = lobby["player_order"].index(socket_id)
+                sio.emit("witness_slap", lobby["players"][socket_id]["name"], room=lobby["name"])
                 sio.emit("explain_slap", results[1], room=lobby["name"])
                 prompt_receive(lobby)
-            else:
+            elif not players[socket_id]["has_burn_slapped"]:
                 if len(players[socket_id]["hand"]) > 0:
                     burnt_card = players[socket_id]["hand"].pop(0)
+                    players[socket_id]["has_burn_slapped"] = True
                     lobby["center_pile"].append(burnt_card)
                     sio.emit("witness_burn_slap",
                              {"burnerName": lobby["players"][socket_id]["name"],
