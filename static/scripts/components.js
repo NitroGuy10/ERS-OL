@@ -64,10 +64,11 @@ class Card extends ImgComponent
         this.originX = 0
         this.originY = 0
 
-        this.burnInfo = null
+        this.burnerIndex = -1
     }
-    deal(dealerIndex)
+    deal(dealerIndex_)
     {
+        
         if (!this.animating)
         {
             if (gameArea.receiveAnimationStart != -1 || gameArea.centerStack.length == 0)
@@ -84,18 +85,21 @@ class Card extends ImgComponent
             }
 
             this.hide()
-            gameArea.components["promptArrow"].hide()
+            
+            let dealerIndex
 
-            if (this.burnInfo == null)
+            if (this.burnerIndex === -1)
             {
+                dealerIndex = dealerIndex_
                 gameArea.audio.deal.play()
                 gameArea.drawList.push(this)
                 gameArea.centerStack.push(this)
                 gameArea.nextCenterCardOffsetIndex = (gameArea.nextCenterCardOffsetIndex + 1) % 3
+                gameArea.components["promptArrow"].hide()
             }
             else
             {
-                dealerIndex = this.burnInfo.burnerIndex
+                dealerIndex = this.burnerIndex
                 gameArea.audio.burn.play()    
 
                 gameArea.drawBottomQueue.push(this)
@@ -137,21 +141,29 @@ class Card extends ImgComponent
             thisCard.animating = false
             delete thisCard.currentAnimations.deal
 
-            if (thisCard.burnInfo != null)
+            if (thisCard.burnerIndex != -1)
             {
-                gameArea.userIsDealing = thisCard.burnInfo.userIsDealing
-                gameArea.userIsReceiving = thisCard.burnInfo.userIsReceiving
-                if (thisCard.burnInfo.userIsDealing)
+                /*
+                gameArea.userIsDealing = gameArea.temp.userIsDealing
+                gameArea.userIsReceiving = gameArea.temp.userIsReceiving
+                if (gameArea.temp.userIsDealing)
                 {
                     gameArea.components["promptArrow"].rotation = Math.PI
                     gameArea.drawList.push(gameArea.components["promptArrow"])
                 }
-                else if (thisCard.burnInfo.userIsReceiving)
+                else if (gameArea.temp.userIsReceiving)
                 {
                     gameArea.components["promptArrow"].rotation = 0
                     gameArea.drawList.push(gameArea.components["promptArrow"])
                 }
-                thisCard.burnInfo = null
+                */
+                console.log(gameArea.centerStack)
+                console.log(gameArea.receiveAnimationStart)
+                if ((gameArea.centerStack.length == 1 && gameArea.centerStack[0] === thisCard) || gameArea.receiveAnimationStart != -1)
+                {
+                    thisCard.hide()
+                }
+                thisCard.burnerIndex = -1
             }
         }
     }
@@ -186,11 +198,9 @@ class Card extends ImgComponent
     }
     setBurn(burnerIndex, userIsDealing, userIsReceiving)
     {
-        this.burnInfo = {
-            burnerIndex: burnerIndex,
-            userIsDealing: userIsDealing,
-            userIsReceiving: userIsReceiving
-        }
+        this.burnerIndex = burnerIndex
+        gameArea.temp.userIsDealing = userIsDealing
+        gameArea.temp.userisReceiving = userIsReceiving
     }
 
 }
@@ -246,13 +256,7 @@ class Slapper extends ImgComponent
             delete thisSlapper.currentAnimations.slap
 
             thisSlapper.animationStart = gameArea.timestamp
-            thisSlapper.currentAnimations.vanish = thisSlapper.vanishMovement
-
-            if (thisSlapper.cardToBurn != null)
-            {
-                thisSlapper.cardToBurn.deal()
-                thisSlapper.cardToBurn = null
-            }
+            thisSlapper.currentAnimations.vanish = thisSlapper.vanishMovement  
         }
     }
     vanishMovement(thisSlapper)
@@ -268,6 +272,12 @@ class Slapper extends ImgComponent
             thisSlapper.alpha = 1.0
             thisSlapper.animating = false
             delete thisSlapper.currentAnimations.vanish
+
+            if (thisSlapper.cardToBurn != null)
+            {
+                thisSlapper.cardToBurn.deal()
+                thisSlapper.cardToBurn = null
+            }
         }
     }
     draw()

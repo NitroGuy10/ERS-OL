@@ -17,6 +17,10 @@ var gameArea = {
     centerCardYOffsets: [10, -10, 10],
     nextCenterCardOffsetIndex: 0,
     centerStack: [],
+    temp: {
+        userIsDealing: false,
+        userIsReceiving: false
+    },
     start: function ()
     {
         socket.emit("join_lobby", window.location.href.split("/")[window.location.href.split("/").length - 1])
@@ -98,9 +102,9 @@ var gameArea = {
 
                     if (gameArea.user.isTurn)
                     {
-                        gameArea.components["promptArrow"].rotation = Math.PI
-                        gameArea.drawList.push(gameArea.components["promptArrow"])
-                        gameArea.userIsDealing = true
+                        // gameArea.components["promptArrow"].rotation = Math.PI
+                        // gameArea.drawList.push(gameArea.components["promptArrow"])
+                        // gameArea.userIsDealing = true
                     }
                 }
                 else

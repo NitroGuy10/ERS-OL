@@ -27,7 +27,7 @@ def normalize(original_string):
 
 
 def set_next_turn_index(lobby):
-    for i in range(len(lobby["player_order"])):
+    for i in range(len(lobby["player_order"]) - 1):
         lobby["whose_turn_index"] = (lobby["whose_turn_index"] + 1) % len(lobby["player_order"])
         if len(players[lobby["player_order"][lobby["whose_turn_index"]]]["hand"]) > 0:
             return True  # Game continues
@@ -80,15 +80,22 @@ def slap_results(pile, settings):
 
 def prompt_deal(lobby):
     dealer_socket_id = lobby["player_order"][lobby["whose_turn_index"]]
-    lobby["current_dealer_sid"] = dealer_socket_id
-    sio.emit("prompt_deal", room=dealer_socket_id)
-    sio.emit("players_turn", players[dealer_socket_id]["name"],
-             room=lobby["name"], skip_sid=dealer_socket_id)  # This is already implied for the dealing player
+    if len(players[dealer_socket_id]["hand"]) == 0:
+        prompt_next_deal(lobby)
+    else:
+        lobby["current_dealer_sid"] = dealer_socket_id
+        sio.emit("prompt_deal", room=dealer_socket_id)
+        sio.emit("players_turn", players[dealer_socket_id]["name"],
+                 room=lobby["name"], skip_sid=dealer_socket_id)  # This is already implied for the dealing player
 
 
 def prompt_next_deal(lobby):
     if not set_next_turn_index(lobby):
-        sio.emit("game_over", "Did you win? I don't know!", room=lobby["name"])
+        reason = "Did you win? I don't know! --- "
+        for player in lobby["players"]:
+            reason += players[player]["name"] + str(players[player]["hand"]) + " --- "
+        sio.emit("game_over", reason, room=lobby["name"])
+        lobby["in_progress"] = False
     else:
         prompt_deal(lobby)
 
@@ -229,6 +236,7 @@ def receive(socket_id):
     lobby = lobbies[players[socket_id]["lobby_name"]]
     if socket_id == lobby["current_recipient_sid"]:
         lobby["current_recipient_sid"] = ""
+        lobby["can_slap"] = False
         lobby["face_card_attempts_left"] = -1
         sio.emit("witness_receive", lobby["players"][socket_id]["name"], room=lobby["name"])
         lobby["players"][socket_id]["hand"].extend(lobby["center_pile"])
@@ -252,14 +260,21 @@ def slap(socket_id):
                 sio.emit("explain_slap", results[1], room=lobby["name"])
                 prompt_receive(lobby)
             else:
-                burnt_card = players[socket_id]["hand"].pop(0)
-                lobby["center_pile"].append(burnt_card)
-                sio.emit("witness_burn_slap",
-                         {"burnerName": lobby["players"][socket_id]["name"],
-                          "cardID": burnt_card.get_id()},
-                         room=lobby["name"])
-                if socket_id == lobby["current_dealer_sid"] and len(players[socket_id]["hand"]) == 0:
-                    prompt_next_deal(lobby)
+                if len(players[socket_id]["hand"]) > 0:
+                    burnt_card = players[socket_id]["hand"].pop(0)
+                    lobby["center_pile"].append(burnt_card)
+                    sio.emit("witness_burn_slap",
+                             {"burnerName": lobby["players"][socket_id]["name"],
+                              "cardID": burnt_card.get_id()},
+                             room=lobby["name"])
+                    if lobby["current_dealer_sid"] == "":
+                        prompt_receive(lobby)
+                    else:
+                        prompt_deal(lobby)
+                    if socket_id == lobby["current_dealer_sid"] and len(players[socket_id]["hand"]) == 0:
+                        prompt_next_deal(lobby)
+                else:
+                    sio.emit("witness_futile_slap", lobby["players"][socket_id]["name"], room=lobby["name"])
 
 
 @sio.event

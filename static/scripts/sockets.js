@@ -78,6 +78,7 @@ function startGame()
 
 socket.on("players_turn", function (playerName)
 {
+    console.log("player's turn")
     makeTurn(playerName)
 })
 
@@ -92,21 +93,21 @@ function makeTurn(playerName)
 
 socket.on("prompt_deal", function ()
 {
+    console.log("prompt deal")
     makeTurn(gameArea.user.name)
     if (gameArea.centerStack.length > 0)
     {
         gameArea.userCanSlap = true
     }
-    if (gameArea.receiveAnimationStart == -1)
-    {
-        gameArea.components["promptArrow"].rotation = Math.PI
-        gameArea.drawList.push(gameArea.components["promptArrow"])
-        gameArea.userIsDealing = true
-    }
+    gameArea.components["promptArrow"].rotation = Math.PI
+    gameArea.drawList.push(gameArea.components["promptArrow"])
+    gameArea.userIsDealing = true
+    gameArea.temp.userIsDealing = true
 })
 
 socket.on("witness_deal", function (info)
 {
+    console.log("witness deal")
     gameArea.components["statusText"].hide()
     gameArea.components[info.cardID].deal(gameArea.players[info.dealerName].index)
     gameArea.userCanSlap = true
@@ -115,20 +116,30 @@ socket.on("witness_deal", function (info)
 socket.on("game_over", function (reason)
 {
     console.log("Game Over! - " + reason)
+    gameArea.components["statusText"].text = reason
+    gameArea.components["statusText"].fontSize = "50px"
+    gameArea.components["statusText"].fillStyle = "#ba4665"
+    gameArea.drawList.push(gameArea.components["statusText"])
+    gameArea.userIsDealing = false
+    gameArea.userIsReceiving = false
+    gameArea.userCanSlap = false
 })
 
 socket.on("prompt_receive", function ()
 {
+    console.log("prompt receive")
     // This signaling is kind of overpowered but eh whatever
     makeTurn(gameArea.user.name)
     gameArea.components["promptArrow"].rotation = 0
     gameArea.drawList.push(gameArea.components["promptArrow"])
     gameArea.userIsReceiving = true
+    gameArea.temp.userIsReceiving = true
     gameArea.userCanSlap = false
 })
 
 socket.on("witness_receive", function (recipientName)
 {
+    console.log("witness receive")
     gameArea.components["promptArrow"].hide()
     gameArea.userCanSlap = false
     gameArea.recipientIndex = gameArea.players[recipientName].index
@@ -138,24 +149,31 @@ socket.on("witness_receive", function (recipientName)
 
 socket.on("witness_futile_slap", function (slapperName)
 {
+    console.log("witness futile slap")
     gameArea.players[slapperName].slapper.slap()
 })
 
 socket.on("witness_burn_slap", function (info)
 {
-    gameArea.components["promptArrow"].hide()
+    console.log("witness burn slap")
+    // gameArea.components["promptArrow"].hide()
     gameArea.components[info.cardID].setBurn(gameArea.players[info.burnerName].index, gameArea.userIsDealing, gameArea.userIsReceiving)
     gameArea.players[info.burnerName].slapper.burnSlap(gameArea.components[info.cardID])
 })
 
 socket.on("witness_slap", function (slapperName)
 {
+    console.log("witness slap")
     gameArea.components["promptArrow"].hide()
     gameArea.players[slapperName].slapper.slap()
+
+    gameArea.userIsDealing = false
+    gameArea.userIsReceiving = false
 })
 
 socket.on("explain_slap", function (explanation)
 {
+    console.log("explain slap")
     gameArea.components["statusText"].text = explanation
     gameArea.components["statusText"].fontSize = "50px"
     gameArea.components["statusText"].fillStyle = "#81d4fa"
