@@ -16,6 +16,7 @@ socket.on("admit_players", function (playerNames)
     if (gameArea.numPlayers == 0)
     {
         gameArea.components["statusText"].hide()
+        document.getElementById("lobbyText").innerHTML = "Lobby: " + window.location.href.split("/")[window.location.href.split("/").length - 1].split("+")[0]
     }
     else
     {
@@ -23,14 +24,14 @@ socket.on("admit_players", function (playerNames)
     }
     for (let playerName of playerNames.split(","))
     {
+        console.log("admit player: " + playerName)
         gameArea.drawList.push((new Player(playerName, gameArea.numPlayers)).component)
 
-        let players = Object.values(gameArea.players)
         for (let i = 0; i < gameArea.numPlayers; i++)
         {
             let theta = (i * 2 * Math.PI / gameArea.numPlayers) + (Math.PI / 2)
-            players[i].component.x = (.4 * gameArea.canvas.width) * Math.cos(theta) + gameArea.canvas.width / 2
-            players[i].component.y = (.4 * gameArea.canvas.height) * Math.sin(theta) + gameArea.canvas.height / 2
+            gameArea.playerOrder[i].component.x = (.4 * gameArea.canvas.width) * Math.cos(theta) + gameArea.canvas.width / 2
+            gameArea.playerOrder[i].component.y = (.4 * gameArea.canvas.height) * Math.sin(theta) + gameArea.canvas.height / 2
         }
     }
 })
@@ -118,7 +119,7 @@ socket.on("game_over", function (reason)
 {
     console.log("Game Over! - " + reason)
     gameArea.components["statusText"].text = reason
-    gameArea.components["statusText"].fontSize = "50px"
+    gameArea.components["statusText"].fontSize = "30px"
     gameArea.components["statusText"].fillStyle = "#ba4665"
     gameArea.drawList.push(gameArea.components["statusText"])
     gameArea.userIsDealing = false
@@ -179,4 +180,12 @@ socket.on("explain_slap", function (explanation)
     gameArea.components["statusText"].fontSize = "50px"
     gameArea.components["statusText"].fillStyle = "#81d4fa"
     gameArea.drawList.push(gameArea.components["statusText"])
+})
+
+socket.on("reveal_hands", function (hands)
+{
+    for (let playerName in hands)
+    {
+        gameArea.players[playerName].revealHand(hands[playerName])
+    }
 })

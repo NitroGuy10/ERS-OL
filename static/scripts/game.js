@@ -4,7 +4,8 @@ var gameArea = {
     drawBottomQueue: [],
     keys: {},
     audio: {},
-    players: {},  // User is always at first index
+    players: {},
+    playerOrder: [],  // User is always at first index
     user: null,
     numPlayers: 0,
     userIsDealing: false,
@@ -144,11 +145,23 @@ class Player
         this.slapper = new Slapper("slapper_" + name, index)
 
         gameArea.players[name] = this
+        gameArea.playerOrder.push(this)
         if (gameArea.user === null)
         {
             gameArea.user = this
         }
         gameArea.numPlayers++
+    }
+    revealHand(handLength)
+    {
+        if (handLength == -1)
+        {
+            this.component.text = this.name
+        }
+        else
+        {
+            this.component.text = [this.name, " (", handLength, ")"].join("")
+        }
     }
     get componentName()
     {

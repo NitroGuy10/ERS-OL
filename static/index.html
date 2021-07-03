@@ -11,8 +11,11 @@
 
 <body>
     <h1>ERS-OL</h1>
-    <textarea id="lobbybox" rows="1" cols="20" maxlength="20"></textarea>
-    <p>Enter lobby name and press ENTER</p>
+    <p>Player Name:</p>
+    <p><textarea id="namebox" rows="1" cols="20" maxlength="20"></textarea></p>
+    <p>Lobby Name:</p>
+    <p><textarea id="lobbybox" rows="1" cols="20" maxlength="20"></textarea></p>
+    <p>Press ENTER to join lobby</p>
     <footer id="copyright">&copy; 2021 NitroGuy</footer>
 
     <script>
@@ -21,10 +24,11 @@
             if (event.code === "Enter" || event.code === "NumpadEnter")
             {
                 event.preventDefault()
-                let lobby = document.getElementById("lobbybox").value.split(/[^0-9A-Za-z_\-]/).join("")
-                if (lobby !== null && lobby !== "")
+                let playerName = document.getElementById("namebox").value.split(/[^0-9A-Za-z_\-]/).join("")
+                let lobbyName = document.getElementById("lobbybox").value.split(/[^0-9A-Za-z_\-]/).join("")
+                if (lobbyName !== null && lobbyName !== "" && playerName !== null && playerName !== "")
                 {
-                    window.location = ["./play/", lobby].join("")
+                    window.location = ["./play/", lobbyName, "+", playerName].join("")
                 }
             }
         })

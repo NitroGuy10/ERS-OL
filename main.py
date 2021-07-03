@@ -3,7 +3,6 @@
 from flask import Flask
 from socketio import Server as SocketIOServer, WSGIApp as SocketIOWSGIApp
 
-from markupsafe import escape
 from re import split as re_split
 from random import randrange, shuffle
 
@@ -24,6 +23,18 @@ lobbies = {}
 
 def normalize(original_string):
     return "".join(re_split(r"[^0-9A-Za-z_\-]", original_string))
+
+
+def get_player_by_name(player_name, lobby=None):
+    if lobby is None:
+        for player in players:
+            if players[player]["name"] == player_name:
+                return players[player]
+    else:
+        for player in lobby["players"]:
+            if players[player]["name"] == player_name:
+                return players[player]
+    return None
 
 
 def set_next_turn_index(lobby):
@@ -83,6 +94,16 @@ def clear_burn_slaps(lobby):
         players[player]["has_burn_slapped"] = False
 
 
+def reveal_low_hands(lobby):
+    low_hands = {}
+    for player in lobby["players"]:
+        if len(players[player]["hand"]) <= 10:
+            low_hands[players[player]["name"]] = len(players[player]["hand"])
+        else:
+            low_hands[players[player]["name"]] = -1
+    sio.emit("reveal_hands", low_hands, room=lobby["name"])
+
+
 def prompt_deal(lobby):
     dealer_socket_id = lobby["player_order"][lobby["whose_turn_index"]]
     if len(players[dealer_socket_id]["hand"]) == 0:
@@ -96,10 +117,12 @@ def prompt_deal(lobby):
 
 def prompt_next_deal(lobby):
     if not set_next_turn_index(lobby):
-        reason = "Did you win? I don't know! --- "
         for player in lobby["players"]:
-            reason += players[player]["name"] + str(players[player]["hand"]) + " --- "
-        sio.emit("game_over", reason, room=lobby["name"])
+            if len(players[player]["hand"]) > 0:
+                reason = players[player]["name"] + " wins!"
+                reveal_low_hands(lobby)
+                sio.emit("game_over", reason, room=lobby["name"])
+                break
         lobby["in_progress"] = False
     else:
         prompt_deal(lobby)
@@ -118,69 +141,82 @@ def index():
     return app.send_static_file("index.html")
 
 
-@app.route("/play/<lobby_name>")
-def serve_game(lobby_name):
-    if lobby_name == normalize(lobby_name[:20]):
-        return app.send_static_file("game.html")
+@app.route("/play/<full_name>")
+def serve_game(full_name):
+    if full_name.find("+") == -1:
+        return "<p>no name chosen</p>"
     else:
-        return "<p>invalid lobby name</p>"
+        lobby_name = full_name[:full_name.find("+")]
+        player_name = full_name[full_name.find("+") + 1:]
+        if lobby_name != normalize(lobby_name[:20]) or not 0 < len(lobby_name) < 20:
+            return "<p>invalid lobby name</p>"
+        elif player_name != normalize(player_name[:20]) or not 0 < len(player_name) < 20:
+            return "<p>invalid player name</p>"
+        else:
+            return app.send_static_file("game.html")
 
 
 @sio.event
-def join_lobby(socket_id, lobby_name):
-    if type(lobby_name) != str:
+def join_lobby(socket_id, full_name):
+    if type(full_name) != str:
         return
-
-    if lobby_name != normalize(lobby_name[:20]):
-        sio.emit("denied_entry", "invalid lobby name", room=socket_id)
-    elif lobby_name in lobbies and len(lobbies[lobby_name]["players"]) >= MAX_PLAYERS_PER_LOBBY:
-        sio.emit("denied_entry", "lobby is full (" + str(MAX_PLAYERS_PER_LOBBY) + " players)", room=socket_id)
-    elif lobby_name in lobbies and lobbies[lobby_name]["in_progress"]:
-        sio.emit("denied_entry", "game is in progress", room=socket_id)
+    if full_name.find("+") == -1:
+        sio.emit("denied_entry", "no name chosen", room=socket_id)
     else:
-        sio.enter_room(socket_id, lobby_name)
-        new_player = {
-            "socket_id": socket_id,
-            "name": socket_id[:6],  # Prompt user to enter a name (?)
-            "lobby_name": lobby_name,
-            "is_host": False,
-            "hand": [
-                # card.Card(1, "Spades")
-            ],
-            "has_burn_slapped": False
-        }
-        if lobby_name not in lobbies:
-            # The first player to join the lobby becomes the host
-            new_player["is_host"] = True
-            lobbies[lobby_name] = {
-                "in_progress": False,
-                "name": lobby_name,
-                "host": new_player,
-                "current_dealer_sid": "",
-                "current_recipient_sid": "",
-                "face_card_initiator_sid": "",
-                "face_card_attempts_left": -1,
-                "players": {},
-                "player_order": [],
-                "whose_turn_index": -1,
-                "settings": {},
-                "center_pile": [],
-                "can_slap": False,
-                "already_slapped": False
-            }
-            print("Lobby " + lobby_name + " created")
-
-        players[socket_id] = new_player
-        lobbies[lobby_name]["players"][socket_id] = new_player
-        sio.emit("admit_players", new_player["name"], room=lobby_name)
-        if len(lobbies[lobby_name]["players"]) == 1:
-            sio.emit("become_host", "", room=socket_id)
+        lobby_name = full_name[:full_name.find("+")]
+        player_name = full_name[full_name.find("+") + 1:]
+        if lobby_name != normalize(lobby_name[:20]) or not 0 < len(lobby_name) < 20:
+            sio.emit("denied_entry", "invalid lobby name", room=socket_id)
+        elif player_name != normalize(player_name[:20]) or not 0 < len(player_name) < 20:
+            sio.emit("denied_entry", "invalid player name", room=socket_id)
+        elif lobby_name in lobbies and get_player_by_name(player_name, lobbies[lobby_name]) is not None:
+            sio.emit("denied_entry", "player name is taken", room=socket_id)
+        elif lobby_name in lobbies and len(lobbies[lobby_name]["players"]) >= MAX_PLAYERS_PER_LOBBY:
+            sio.emit("denied_entry", "lobby is full (" + str(MAX_PLAYERS_PER_LOBBY) + " players)", room=socket_id)
+        elif lobby_name in lobbies and lobbies[lobby_name]["in_progress"]:
+            sio.emit("denied_entry", "game is in progress", room=socket_id)
         else:
-            earlier_players = []
-            for player_socket_id in lobbies[lobby_name]["players"]:
-                if player_socket_id != socket_id:
-                    earlier_players.append(players[player_socket_id]["name"])
-            sio.emit("admit_players", ",".join(earlier_players), room=socket_id)
+            sio.enter_room(socket_id, lobby_name)
+            new_player = {
+                "socket_id": socket_id,
+                "name": player_name,
+                "lobby_name": lobby_name,
+                "is_host": False,
+                "hand": [],
+                "has_burn_slapped": False
+            }
+            if lobby_name not in lobbies:
+                # The first player to join the lobby becomes the host
+                new_player["is_host"] = True
+                lobbies[lobby_name] = {
+                    "in_progress": False,
+                    "name": lobby_name,
+                    "host": new_player,
+                    "current_dealer_sid": "",
+                    "current_recipient_sid": "",
+                    "face_card_initiator_sid": "",
+                    "face_card_attempts_left": -1,
+                    "players": {},
+                    "player_order": [],
+                    "whose_turn_index": -1,
+                    "settings": {},
+                    "center_pile": [],
+                    "can_slap": False,
+                    "already_slapped": False
+                }
+                print("Lobby " + lobby_name + " created")
+
+            players[socket_id] = new_player
+            lobbies[lobby_name]["players"][socket_id] = new_player
+            sio.emit("admit_players", new_player["name"], room=lobby_name)
+            if len(lobbies[lobby_name]["players"]) == 1:
+                sio.emit("become_host", "", room=socket_id)
+            else:
+                earlier_players = []
+                for player_socket_id in lobbies[lobby_name]["players"]:
+                    if player_socket_id != socket_id:
+                        earlier_players.append(players[player_socket_id]["name"])
+                sio.emit("admit_players", ",".join(earlier_players), room=socket_id)
 
 
 @sio.event
@@ -210,6 +246,7 @@ def deal(socket_id):
     lobby = lobbies[players[socket_id]["lobby_name"]]
     if socket_id == lobby["current_dealer_sid"]:
         dealt_card = players[socket_id]["hand"].pop(0)
+        reveal_low_hands(lobby)
         lobby["center_pile"].insert(0, dealt_card)
         lobby["can_slap"] = True
         lobby["already_slapped"] = False
@@ -247,6 +284,7 @@ def receive(socket_id):
         lobby["face_card_attempts_left"] = -1
         sio.emit("witness_receive", lobby["players"][socket_id]["name"], room=lobby["name"])
         lobby["players"][socket_id]["hand"].extend(lobby["center_pile"])
+        reveal_low_hands(lobby)
         lobby["center_pile"] = []
         prompt_deal(lobby)
 
