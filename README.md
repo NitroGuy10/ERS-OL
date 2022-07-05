@@ -8,6 +8,8 @@ There's arguing, mind games, memorization, and most importantly violently slappi
 
 I said screw all that and let's make an online version of it anyway.
 
+![A game of ERS-OL](example.png)
+
 ## Dependencies and "Dependencies"
 
 This game uses some AWESOME AND SUPER USEFUL public domain (CC0) playing card sprites from Kenney[]().nl
@@ -24,7 +26,7 @@ You'll need [Python 3](https://www.python.org/)
 
 ```
 # Clone the repository with git (or do it your own way)
-git clone https://github.com/NitroGuy10/tuscon
+git clone https://github.com/NitroGuy10/ERS-OL
 
 # Create a virtual environment
 python3 -m venv venv
